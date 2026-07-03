@@ -1,0 +1,3561 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#080712">
+  <title>Run Rap Festival</title>
+  <style>
+    :root {
+      --ink: #f8f7ff;
+      --muted: #b9b7d8;
+      --panel: rgba(8, 8, 22, .82);
+      --panel-strong: rgba(5, 5, 14, .94);
+      --line: rgba(255, 255, 255, .15);
+      --cyan: #18d8ff;
+      --pink: #ff365f;
+      --gold: #ffd43d;
+      --violet: #8c45ff;
+      --green: #23f2a8;
+      --shadow: 0 20px 70px rgba(0, 0, 0, .55);
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: #080712;
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      letter-spacing: 0;
+      touch-action: none;
+      user-select: none;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    .app {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      background: #080712;
+    }
+
+    canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .hud {
+      position: absolute;
+      top: calc(12px + env(safe-area-inset-top));
+      left: 50%;
+      z-index: 5;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(104px, 1fr));
+      gap: 8px;
+      width: min(700px, calc(100% - 24px));
+      transform: translateX(-50%);
+      pointer-events: none;
+      transition: opacity .18s ease, transform .18s ease;
+    }
+
+    .hud.is-hidden {
+      opacity: 0;
+      transform: translateX(-50%) translateY(-10px);
+    }
+
+    .metric {
+      min-width: 0;
+      padding: 9px 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: linear-gradient(180deg, rgba(20, 18, 45, .86), rgba(7, 7, 19, .72));
+      box-shadow: 0 8px 30px rgba(0, 0, 0, .25), inset 0 1px 0 rgba(255, 255, 255, .12);
+      backdrop-filter: blur(12px);
+    }
+
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font-size: .68rem;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .metric strong {
+      display: block;
+      margin-top: 2px;
+      overflow: hidden;
+      color: white;
+      font-size: 1.08rem;
+      font-weight: 1000;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      text-shadow: 0 0 12px rgba(24, 216, 255, .34);
+    }
+
+    .bonusBar {
+      position: absolute;
+      top: calc(72px + env(safe-area-inset-top));
+      left: 50%;
+      z-index: 5;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 6px;
+      width: min(680px, calc(100% - 24px));
+      transform: translateX(-50%);
+      pointer-events: none;
+    }
+
+    .pill {
+      display: none;
+      align-items: center;
+      height: 30px;
+      padding: 0 11px;
+      border: 1px solid rgba(255, 255, 255, .17);
+      border-radius: 999px;
+      background: rgba(5, 5, 14, .72);
+      color: white;
+      font-size: .78rem;
+      font-weight: 1000;
+      box-shadow: 0 0 22px rgba(24, 216, 255, .18);
+      backdrop-filter: blur(8px);
+    }
+
+    .pill.is-on {
+      display: inline-flex;
+    }
+
+    .audioPanel {
+      position: absolute;
+      right: max(12px, env(safe-area-inset-right));
+      bottom: max(12px, env(safe-area-inset-bottom));
+      z-index: 9;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px;
+      border: 1px solid rgba(255, 255, 255, .16);
+      border-radius: 8px;
+      background: rgba(6, 7, 20, .74);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+
+    .sound {
+      min-width: 108px;
+      height: 38px;
+      border: 1px solid rgba(255, 255, 255, .18);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, .08);
+      color: white;
+      font-weight: 1000;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+    }
+
+    .soundIcon {
+      width: 26px;
+      height: 26px;
+      object-fit: contain;
+      filter: drop-shadow(0 0 8px rgba(24, 216, 255, .36));
+    }
+
+    .volume {
+      width: 96px;
+      accent-color: var(--gold);
+      cursor: pointer;
+    }
+
+    .screen {
+      position: absolute;
+      inset: 0;
+      z-index: 8;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: calc(28px + env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) calc(28px + env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
+      pointer-events: auto;
+    }
+
+    .screen.is-active {
+      display: flex;
+    }
+
+    .panel {
+      width: min(540px, 100%);
+      max-height: calc(100vh - 48px);
+      overflow: auto;
+      padding: 24px;
+      border: 1px solid rgba(255, 255, 255, .16);
+      border-radius: 8px;
+      background: linear-gradient(180deg, rgba(13, 11, 31, .9), rgba(4, 5, 13, .87));
+      box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, .1);
+    }
+
+    .logo {
+      margin: 0;
+      font-size: 3.2rem;
+      line-height: .92;
+      font-weight: 1000;
+      text-align: center;
+      text-transform: uppercase;
+      text-shadow: 0 0 18px rgba(24, 216, 255, .65), 0 0 34px rgba(255, 54, 95, .25);
+    }
+
+    .logo span {
+      display: block;
+      color: var(--gold);
+      text-shadow: 0 0 18px rgba(255, 212, 61, .7);
+    }
+
+    .brandLogo {
+      display: block;
+      width: min(292px, 68vw);
+      height: auto;
+      margin: -12px auto 4px;
+      filter: drop-shadow(0 18px 34px rgba(0, 0, 0, .48));
+    }
+
+    .srOnly {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+    }
+
+    .lead {
+      margin: 14px auto 20px;
+      max-width: 34rem;
+      color: var(--muted);
+      font-size: .98rem;
+      line-height: 1.45;
+      text-align: center;
+    }
+
+    .actions {
+      display: grid;
+      gap: 10px;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 18px;
+      border: 1px solid rgba(255, 255, 255, .18);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, .08);
+      color: white;
+      font-weight: 1000;
+      text-decoration: none;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: transform .15s ease, background .15s ease, box-shadow .15s ease;
+    }
+
+    .button:hover,
+    .button:focus-visible {
+      transform: translateY(-1px);
+      background: rgba(255, 255, 255, .13);
+      outline: none;
+    }
+
+    .button.primary {
+      border-color: rgba(255, 212, 61, .65);
+      background: linear-gradient(135deg, #ff365f, #ffd43d);
+      color: #1b0712;
+      box-shadow: 0 14px 40px rgba(255, 54, 95, .28), 0 0 30px rgba(255, 212, 61, .18);
+    }
+
+    .hintGrid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin: 0 0 18px;
+    }
+
+    .hintGrid div {
+      padding: 10px;
+      border: 1px solid rgba(255, 255, 255, .11);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, .055);
+      color: var(--muted);
+      font-size: .78rem;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .hintGrid strong {
+      display: block;
+      margin-bottom: 4px;
+      color: white;
+      font-size: 1.2rem;
+    }
+
+    .panelTitle {
+      margin: 0 0 12px;
+      font-size: 1.55rem;
+      text-transform: uppercase;
+    }
+
+    .summaryGrid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin: 14px 0;
+    }
+
+    .summaryGrid div {
+      padding: 10px;
+      border: 1px solid rgba(255, 255, 255, .12);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, .06);
+    }
+
+    .summaryGrid span {
+      display: block;
+      color: var(--muted);
+      font-size: .7rem;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .summaryGrid strong {
+      display: block;
+      margin-top: 3px;
+      font-size: 1.15rem;
+    }
+
+    .rank {
+      margin: 0;
+      color: var(--gold);
+      font-size: 1.35rem;
+      text-align: center;
+      text-shadow: 0 0 18px rgba(255, 212, 61, .45);
+    }
+
+    .nameForm {
+      display: none;
+      gap: 8px;
+      margin: 14px 0;
+      align-items: center;
+    }
+
+    .nameForm.is-active {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(180px, 1.35fr) auto;
+    }
+
+    .nameForm input {
+      min-width: 0;
+      height: 46px;
+      padding: 0 12px;
+      border: 1px solid rgba(255, 255, 255, .18);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, .09);
+      color: white;
+      outline: none;
+    }
+
+    .nameForm input:invalid {
+      border-color: rgba(255, 54, 95, .55);
+    }
+
+    .formHint {
+      grid-column: 1 / -1;
+      min-height: 18px;
+      margin: 0;
+      color: var(--muted);
+      font-size: .74rem;
+      font-weight: 800;
+    }
+
+    .formHint.is-ok {
+      color: var(--green);
+    }
+
+    .formHint.is-error {
+      color: var(--pink);
+    }
+
+    .scoreTable {
+      display: grid;
+      gap: 7px;
+      margin: 12px 0 18px;
+    }
+
+    .scoreRow {
+      display: grid;
+      grid-template-columns: 42px 1fr 78px;
+      gap: 8px;
+      align-items: center;
+      min-height: 38px;
+      padding: 0 10px;
+      border: 1px solid rgba(255, 255, 255, .1);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, .055);
+      font-weight: 900;
+    }
+
+    .scoreRow span:nth-child(2) {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .scoreRow span:last-child {
+      color: var(--gold);
+      text-align: right;
+    }
+
+    .toast {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      z-index: 10;
+      min-width: 190px;
+      padding: 14px 18px;
+      border: 1px solid rgba(255, 255, 255, .18);
+      border-radius: 8px;
+      background: rgba(5, 4, 15, .82);
+      color: white;
+      font-size: 1rem;
+      font-weight: 1000;
+      text-align: center;
+      text-transform: uppercase;
+      transform: translate(-50%, -50%) scale(.92);
+      opacity: 0;
+      pointer-events: none;
+      box-shadow: var(--shadow);
+      transition: opacity .18s ease, transform .18s ease;
+      backdrop-filter: blur(14px);
+    }
+
+    .toast.is-visible {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    .pauseOverlay {
+      position: absolute;
+      inset: 0;
+      z-index: 7;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      background: rgba(3, 2, 12, .18);
+      backdrop-filter: blur(2px);
+    }
+
+    .pauseOverlay.is-active {
+      display: flex;
+    }
+
+    .pauseOverlay span {
+      padding: 16px 26px;
+      border: 1px solid rgba(255, 255, 255, .2);
+      border-radius: 8px;
+      background: rgba(5, 4, 15, .78);
+      color: white;
+      font-size: clamp(2rem, 8vw, 4.4rem);
+      font-weight: 1000;
+      text-transform: uppercase;
+      text-shadow: 0 0 22px rgba(255, 212, 61, .62), 0 0 34px rgba(255, 54, 95, .34);
+      box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, .12);
+    }
+
+    @media (max-width: 680px) {
+      .hud {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .metric {
+        padding: 8px 7px;
+      }
+
+      .metric span {
+        font-size: .58rem;
+      }
+
+      .metric strong {
+        font-size: .9rem;
+      }
+
+      .bonusBar {
+        top: calc(68px + env(safe-area-inset-top));
+      }
+
+      .audioPanel {
+        right: 12px;
+        left: 12px;
+        justify-content: space-between;
+      }
+
+      .volume {
+        flex: 1;
+        width: auto;
+      }
+
+      .panel {
+        padding: 18px;
+      }
+
+      .logo {
+        font-size: 2.35rem;
+      }
+
+      .brandLogo {
+        width: min(218px, 62vw);
+        margin-top: -8px;
+      }
+
+      .lead {
+        margin: 8px auto 12px;
+        font-size: .88rem;
+      }
+
+      .hintGrid,
+      .summaryGrid {
+        grid-template-columns: 1fr;
+      }
+
+      .hintGrid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 6px;
+      }
+
+      .hintGrid div {
+        padding: 8px 4px;
+        font-size: .64rem;
+      }
+
+      .hintGrid strong {
+        font-size: .95rem;
+      }
+
+      .nameForm.is-active {
+        grid-template-columns: 1fr;
+      }
+
+      .nameForm .button {
+        width: 100%;
+      }
+    }
+
+    @media (max-height: 620px) and (orientation: landscape) {
+      .hud {
+        left: 12px;
+        grid-template-columns: repeat(3, 96px);
+        width: 304px;
+        transform: none;
+      }
+
+      .hud.is-hidden {
+        transform: translateY(-10px);
+      }
+
+      .bonusBar {
+        top: 12px;
+        right: 12px;
+        left: auto;
+        width: 260px;
+        transform: none;
+      }
+
+      .panel {
+        width: min(720px, 100%);
+        padding: 16px;
+      }
+
+      .logo {
+        font-size: 2.2rem;
+      }
+
+      .lead {
+        margin: 8px auto 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app" id="app">
+    <canvas id="game" aria-label="Run Rap Festival"></canvas>
+
+    <section class="hud is-hidden" id="hud" aria-live="polite">
+      <div class="metric"><span>Score</span><strong id="scoreText">0</strong></div>
+      <div class="metric"><span>Meilleur</span><strong id="bestText">0</strong></div>
+      <div class="metric"><span>Distance</span><strong id="distanceText">0 m</strong></div>
+    </section>
+
+    <div class="bonusBar">
+      <span class="pill" id="vipPill">VIP</span>
+      <span class="pill" id="flowPill">Flow x2</span>
+      <span class="pill" id="comboPill">Combo</span>
+    </div>
+
+    <section class="screen is-active" id="homeScreen">
+      <div class="panel">
+        <img class="brandLogo" src="assets/logo_run_rap_festival.png" alt="Run Rap Festival">
+        <h1 class="logo srOnly">Run Rap Festival</h1>
+        <p class="lead">Saute au bon timing entre les structures de scène, récolte micros et vinyles, puis tiens le show le plus longtemps possible.</p>
+        <div class="hintGrid">
+          <div><strong>PC</strong>Clic souris</div>
+          <div><strong>Mobile</strong>Tap écran</div>
+          <div><strong>Bonus</strong>VIP et Flow</div>
+        </div>
+        <div class="actions">
+          <button class="button primary" id="playBtn" type="button">Jouer</button>
+          <button class="button" id="scoresBtn" type="button">Classement</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen" id="scoresScreen">
+      <div class="panel">
+        <h2 class="panelTitle">Top 10 local</h2>
+        <div class="scoreTable" id="scoreTable"></div>
+        <div class="actions">
+          <button class="button primary" id="scoresPlayBtn" type="button">Jouer</button>
+          <button class="button" data-home type="button">Retour</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen" id="gameOverScreen">
+      <div class="panel">
+        <h2 class="panelTitle">Game Over</h2>
+        <p class="rank" id="rankTitle">🎤 Rookie</p>
+        <div class="summaryGrid">
+          <div><span>Score final</span><strong id="finalScore">0</strong></div>
+          <div><span>Distance</span><strong id="finalDistance">0 m</strong></div>
+          <div><span>Micros collectés</span><strong id="finalMics">0</strong></div>
+          <div><span>Meilleur score</span><strong id="finalBest">0</strong></div>
+        </div>
+        <form class="nameForm" id="nameForm">
+          <input id="playerFirstName" maxlength="28" autocomplete="given-name" placeholder="Prénom" required>
+          <input id="playerEmail" type="email" maxlength="80" autocomplete="email" inputmode="email" placeholder="Email" required>
+          <button class="button primary" id="scoreSubmitBtn" type="submit">Valider</button>
+          <p class="formHint" id="scoreSaveStatus" aria-live="polite"></p>
+        </form>
+        <div class="scoreTable" id="overScoreTable"></div>
+        <div class="actions">
+          <button class="button primary" id="restartBtn" type="button">Rejouer immédiatement</button>
+          <button class="button" data-home type="button">Accueil</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="audioPanel">
+      <button class="sound" id="soundBtn" type="button" aria-pressed="false">🔊 Son</button>
+      <input class="volume" id="volumeRange" type="range" min="0" max="1" step="0.01" value="0.55" aria-label="Volume">
+    </div>
+
+    <div class="toast" id="toast"></div>
+    <div class="pauseOverlay" id="pauseOverlay" aria-hidden="true"><span>Pause</span></div>
+  </div>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const canvas = document.getElementById("game");
+      const ctx = canvas.getContext("2d", { alpha: false });
+      const hud = document.getElementById("hud");
+      const scoreText = document.getElementById("scoreText");
+      const bestText = document.getElementById("bestText");
+      const distanceText = document.getElementById("distanceText");
+      const vipPill = document.getElementById("vipPill");
+      const flowPill = document.getElementById("flowPill");
+      const comboPill = document.getElementById("comboPill");
+      const scoreTable = document.getElementById("scoreTable");
+      const overScoreTable = document.getElementById("overScoreTable");
+      const nameForm = document.getElementById("nameForm");
+      const playerFirstName = document.getElementById("playerFirstName");
+      const playerEmail = document.getElementById("playerEmail");
+      const scoreSubmitBtn = document.getElementById("scoreSubmitBtn");
+      const scoreSaveStatus = document.getElementById("scoreSaveStatus");
+      const soundBtn = document.getElementById("soundBtn");
+      const volumeRange = document.getElementById("volumeRange");
+      const pauseOverlay = document.getElementById("pauseOverlay");
+      const toast = document.getElementById("toast");
+
+      const SCORE_KEY = "rap_air_festival_scores_v1";
+      const SOUND_KEY = "rap_air_festival_sound_v1";
+      const VOLUME_KEY = "rap_air_festival_volume_v1";
+      const WIX_SCORE_MESSAGE = "RUN_RAP_FESTIVAL_SCORE";
+      const WIX_SCORE_ACK_MESSAGE = "RUN_RAP_FESTIVAL_SCORE_ACK";
+
+      const COLORS = {
+        ink: "#080712",
+        deep: "#100622",
+        panel: "#111225",
+        cyan: "#18d8ff",
+        pink: "#ff365f",
+        gold: "#ffd43d",
+        violet: "#8c45ff",
+        green: "#23f2a8",
+        white: "#f8f7ff",
+        asphalt: "#11131e"
+      };
+
+      const PICKUPS = {
+        mic: { label: "Micro", score: 5, color: COLORS.cyan },
+        vinyl: { label: "Vinyle", score: 10, color: COLORS.pink },
+        casque: { label: "Casque", score: 20, color: COLORS.green },
+        vip: { label: "Pass VIP", score: 0, color: COLORS.gold, bonus: "vip", duration: 5000 },
+        flow: { label: "Flow", score: 0, color: COLORS.violet, bonus: "flow", duration: 10000 }
+      };
+
+      const SCENE_DISTANCE_MAX = 1800;
+      const FORCED_SCENE_PROGRESS = (() => {
+        const value = new URLSearchParams(window.location.search).get("scene");
+        if (value === null) return null;
+        const numeric = Number(value.replace(",", "."));
+        if (!Number.isFinite(numeric)) return null;
+        return clamp(numeric <= 5 ? numeric / 5 : numeric / 100, 0, 1);
+      })();
+      const MOBILE_EFFECT_BIAS = window.matchMedia && window.matchMedia("(pointer: coarse)").matches ? .62 : 1;
+      const SCENE_NUMERIC_PROPS = ["energy", "crowd", "lasers", "smoke", "led", "confetti", "pyro", "holos", "flashes", "sunset"];
+      const SCENE_STAGES = [
+        {
+          threshold: 0,
+          label: "DEBUT DU FESTIVAL",
+          primary: "#72ffe2",
+          accent: "#ff9b35",
+          warm: "#ff6238",
+          sky: "#321653",
+          energy: .18,
+          crowd: .2,
+          lasers: .08,
+          smoke: .03,
+          led: .22,
+          confetti: 0,
+          pyro: 0,
+          holos: 0,
+          flashes: .08,
+          sunset: .72
+        },
+        {
+          threshold: .2,
+          label: "MONTEE EN PUISSANCE",
+          primary: "#18d8ff",
+          accent: "#8c45ff",
+          warm: "#ff35b4",
+          sky: "#141c72",
+          energy: .36,
+          crowd: .42,
+          lasers: .25,
+          smoke: .16,
+          led: .42,
+          confetti: .04,
+          pyro: 0,
+          holos: .06,
+          flashes: .2,
+          sunset: .34
+        },
+        {
+          threshold: .4,
+          label: "GRANDE SCENE",
+          primary: "#d94cff",
+          accent: "#18d8ff",
+          warm: "#ff3ef2",
+          sky: "#1b0c4e",
+          energy: .56,
+          crowd: .64,
+          lasers: .48,
+          smoke: .52,
+          led: .62,
+          confetti: .28,
+          pyro: .08,
+          holos: .18,
+          flashes: .36,
+          sunset: .12
+        },
+        {
+          threshold: .6,
+          label: "MOMENT HEADLINER",
+          primary: "#ff365f",
+          accent: "#2d66ff",
+          warm: "#ff8a20",
+          sky: "#15083a",
+          energy: .75,
+          crowd: .82,
+          lasers: .72,
+          smoke: .48,
+          led: .72,
+          confetti: .42,
+          pyro: .55,
+          holos: .35,
+          flashes: .55,
+          sunset: 0
+        },
+        {
+          threshold: .8,
+          label: "MODE FLOW / VIP",
+          primary: "#ffd43d",
+          accent: "#18d8ff",
+          warm: "#ff2fb2",
+          sky: "#0a0d35",
+          energy: .9,
+          crowd: .94,
+          lasers: .9,
+          smoke: .38,
+          led: .92,
+          confetti: .62,
+          pyro: .65,
+          holos: .82,
+          flashes: .72,
+          sunset: 0
+        },
+        {
+          threshold: .94,
+          label: "BOSS / FINAL",
+          primary: "#ff45ff",
+          accent: "#ffd43d",
+          warm: "#ff6033",
+          sky: "#100322",
+          energy: 1,
+          crowd: 1,
+          lasers: 1,
+          smoke: .55,
+          led: 1,
+          confetti: .78,
+          pyro: 1,
+          holos: 1,
+          flashes: 1,
+          sunset: 0
+        }
+      ];
+
+      const SPRITE_FILES = {
+        background_festival: "assets/background_festival.png",
+        background_full: "assets/background_full.jpg",
+        background_stage_0: "assets/background_stage_0.jpg",
+        background_stage_1: "assets/background_stage_1.jpg",
+        background_stage_2: "assets/background_stage_2.jpg",
+        background_stage_3: "assets/background_stage_3.jpg",
+        background_stage_4: "assets/background_stage_4.jpg",
+        background_stage_5: "assets/background_stage_5.jpg",
+        player_fly: "assets/player_stable.png",
+        player_dash: "assets/player_dash.png",
+        player_jump: "assets/player_jump.png",
+        player_flip: "assets/player_flip.png",
+        player_mic: "assets/player_mic.png",
+        player_flow: "assets/player_flow.png",
+        player_vip: "assets/player_vip.png",
+        player_idle_0: "assets/player_idle_0.png",
+        player_idle_1: "assets/player_idle_1.png",
+        player_idle_2: "assets/player_idle_2.png",
+        player_idle_3: "assets/player_idle_3.png",
+        player_idle_4: "assets/player_idle_4.png",
+        player_idle_5: "assets/player_idle_5.png",
+        player_jump_0: "assets/player_jump_0.png",
+        player_jump_1: "assets/player_jump_1.png",
+        player_jump_2: "assets/player_jump_2.png",
+        player_jump_3: "assets/player_jump_3.png",
+        player_jump_4: "assets/player_jump_4.png",
+        player_jump_5: "assets/player_jump_5.png",
+        player_fall_0: "assets/player_fall_0.png",
+        player_fall_1: "assets/player_fall_1.png",
+        player_fall_2: "assets/player_fall_2.png",
+        player_fall_3: "assets/player_fall_3.png",
+        player_fall_4: "assets/player_fall_4.png",
+        player_fall_5: "assets/player_fall_5.png",
+        player_hit_0: "assets/player_hit_0.png",
+        player_hit_1: "assets/player_hit_1.png",
+        player_hit_2: "assets/player_hit_2.png",
+        player_hit_3: "assets/player_hit_3.png",
+        player_hit_4: "assets/player_hit_4.png",
+        player_hit_5: "assets/player_hit_5.png",
+        obstacle_speaker: "assets/obstacle_speaker.png",
+        obstacle_truss: "assets/obstacle_truss.png",
+        obstacle_led: "assets/obstacle_led.png",
+        obstacle_screen: "assets/obstacle_screen.png",
+        obstacle_light: "assets/obstacle_light.png",
+        obstacle_cases: "assets/obstacle_cases.png",
+        item_mic: "assets/item_mic.png",
+        item_vinyl: "assets/item_vinyl.png",
+        item_casque: "assets/item_headphones_red.png",
+        item_vip: "assets/item_vip.png",
+        item_flow: "assets/item_flow.png"
+      };
+
+      const sprites = {};
+      for (const [name, src] of Object.entries(SPRITE_FILES)) {
+        const img = new Image();
+        img.decoding = "async";
+        img.src = src;
+        sprites[name] = img;
+      }
+
+      const PLAYER_ANIMS = {
+        idle: ["player_idle_0", "player_idle_1", "player_idle_2", "player_idle_3", "player_idle_4", "player_idle_5"],
+        jump: ["player_jump_0", "player_jump_1", "player_jump_2", "player_jump_3", "player_jump_4", "player_jump_5"],
+        fall: ["player_fall_0", "player_fall_1", "player_fall_2", "player_fall_3", "player_fall_4", "player_fall_5"],
+        hit: ["player_hit_0", "player_hit_1", "player_hit_2", "player_hit_3", "player_hit_4", "player_hit_5"]
+      };
+
+      const PLAYER_ANIM_MS = {
+        idle: 130,
+        jump: 70,
+        fall: 90,
+        hit: 110
+      };
+
+      const STAGE_BACKGROUND_KEYS = [
+        "background_stage_0",
+        "background_stage_1",
+        "background_stage_2",
+        "background_stage_3",
+        "background_stage_4",
+        "background_stage_5"
+      ];
+      const FULL_BACKGROUND_STAGE_PANS = [.035, .225, .43, .575, .755, .94];
+      const STAGE_BACKGROUND_STAGE_PANS = [.12, .27, .48, .52, .55, .58];
+      const BACKGROUND_STAGE_DRIFT = .018;
+      const BACKGROUND_PHOTO_FADE_START = .76;
+      const BACKGROUND_DEZOOM_HEIGHT = .74;
+      const BACKGROUND_LOOP_SPEED = .045;
+      const BACKGROUND_MAX_UPSCALE = 1.04;
+
+      const SECRET_INVINCIBLE_SEQUENCE = [
+        "arrowup",
+        "arrowup",
+        "arrowdown",
+        "arrowdown",
+        "arrowleft",
+        "arrowright",
+        "arrowleft",
+        "arrowright",
+        "b",
+        "a"
+      ];
+
+      const state = {
+        phase: "home",
+        dpr: 1,
+        w: 0,
+        h: 0,
+        scale: 1,
+        time: 0,
+        runTime: 0,
+        distance: 0,
+        score: 0,
+        displayScore: 0,
+        best: 0,
+        mics: 0,
+        combo: 0,
+        obstaclesPassed: 0,
+        scroll: 0,
+        cameraShake: 0,
+        sceneStage: 0,
+        sceneCache: null,
+        sceneCacheProgress: -1,
+        frameId: 0,
+        avgFrameMs: 16.7,
+        perfQuality: 1,
+        player: null,
+        obstacles: [],
+        pickups: [],
+        particles: [],
+        confetti: [],
+        floaters: [],
+        smoke: [],
+        crowd: [],
+        bonuses: { vip: 0, flow: 0 },
+        nextObstacleAt: 0,
+        nextPickupAt: 0,
+        lastResult: null,
+        pendingRecord: false,
+        scoreSubmitting: false,
+        lastSubmissionId: "",
+        invincible: false,
+        secretInvincible: false,
+        secretInputIndex: 0,
+        lastSecretKeyAt: 0,
+        pauseStarted: 0
+      };
+
+      class AudioEngine {
+        constructor() {
+          this.ctx = null;
+          this.master = null;
+          this.beatTimer = null;
+          this.crowdTimer = null;
+          this.stageTimer = null;
+          this.step = 0;
+          this.noiseBuffer = null;
+          this.muted = localStorage.getItem(SOUND_KEY) === "off";
+          const savedVolume = Number(localStorage.getItem(VOLUME_KEY));
+          this.volume = Number.isFinite(savedVolume) ? savedVolume : 0.55;
+        }
+
+        ensure() {
+          if (this.ctx) {
+            if (this.ctx.state === "suspended") this.ctx.resume();
+            return;
+          }
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (!AudioContext) return;
+          this.ctx = new AudioContext();
+          this.master = this.ctx.createGain();
+          this.master.gain.value = this.muted ? 0 : this.volume;
+          this.master.connect(this.ctx.destination);
+          this.noiseBuffer = this.makeNoise(1.2);
+        }
+
+        makeNoise(seconds) {
+          const length = Math.floor(this.ctx.sampleRate * seconds);
+          const buffer = this.ctx.createBuffer(1, length, this.ctx.sampleRate);
+          const data = buffer.getChannelData(0);
+          for (let i = 0; i < length; i += 1) data[i] = Math.random() * 2 - 1;
+          return buffer;
+        }
+
+        setMuted(muted) {
+          this.muted = muted;
+          localStorage.setItem(SOUND_KEY, muted ? "off" : "on");
+          this.applyVolume();
+        }
+
+        setVolume(value) {
+          this.volume = clamp(value, 0, 1);
+          localStorage.setItem(VOLUME_KEY, String(this.volume));
+          this.applyVolume();
+        }
+
+        applyVolume() {
+          if (!this.ctx || !this.master) return;
+          this.master.gain.cancelScheduledValues(this.ctx.currentTime);
+          this.master.gain.setTargetAtTime(this.muted ? 0 : this.volume, this.ctx.currentTime, 0.035);
+        }
+
+        startBeat() {
+          this.ensure();
+          if (!this.ctx || this.beatTimer) return;
+          const tick = () => {
+            const now = this.ctx.currentTime;
+            const s = this.step % 16;
+            if (s === 0 || s === 7 || s === 11) this.kick(now);
+            if (s === 4 || s === 12) this.snare(now);
+            if (s % 2 === 0) this.hat(now);
+            if ([0, 3, 8, 10, 14].includes(s)) this.bass(now, [55, 65, 73, 49, 58][s % 5]);
+            this.step += 1;
+          };
+          tick();
+          this.beatTimer = window.setInterval(tick, 138);
+          this.startAmbience();
+        }
+
+        stopBeat() {
+          if (this.beatTimer) window.clearInterval(this.beatTimer);
+          if (this.crowdTimer) window.clearInterval(this.crowdTimer);
+          if (this.stageTimer) window.clearInterval(this.stageTimer);
+          this.beatTimer = null;
+          this.crowdTimer = null;
+          this.stageTimer = null;
+        }
+
+        startAmbience() {
+          if (!this.ctx || this.crowdTimer) return;
+          this.crowdSwell(.55);
+          this.crowdTimer = window.setInterval(() => this.crowdSwell(.35 + Math.random() * .35), 2600);
+          this.stageTimer = window.setInterval(() => this.stageZap(), 1750);
+        }
+
+        tone(type, freq, start, duration, gainValue, destination) {
+          if (!this.ctx || !this.master) return null;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, start);
+          gain.gain.setValueAtTime(0.0001, start);
+          gain.gain.exponentialRampToValueAtTime(Math.max(0.0002, gainValue), start + 0.012);
+          gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+          osc.connect(gain);
+          gain.connect(destination || this.master);
+          osc.start(start);
+          osc.stop(start + duration + 0.03);
+          return { osc, gain };
+        }
+
+        kick(time) {
+          const part = this.tone("sine", 115, time, .2, .52);
+          if (part) part.osc.frequency.exponentialRampToValueAtTime(42, time + .18);
+        }
+
+        snare(time) {
+          if (!this.ctx || !this.noiseBuffer) return;
+          const src = this.ctx.createBufferSource();
+          const filter = this.ctx.createBiquadFilter();
+          const gain = this.ctx.createGain();
+          src.buffer = this.noiseBuffer;
+          filter.type = "bandpass";
+          filter.frequency.value = 1550;
+          gain.gain.setValueAtTime(.16, time);
+          gain.gain.exponentialRampToValueAtTime(.0001, time + .17);
+          src.connect(filter);
+          filter.connect(gain);
+          gain.connect(this.master);
+          src.start(time);
+          src.stop(time + .2);
+        }
+
+        hat(time) {
+          if (!this.ctx || !this.noiseBuffer) return;
+          const src = this.ctx.createBufferSource();
+          const filter = this.ctx.createBiquadFilter();
+          const gain = this.ctx.createGain();
+          src.buffer = this.noiseBuffer;
+          filter.type = "highpass";
+          filter.frequency.value = 6500;
+          gain.gain.setValueAtTime(.055, time);
+          gain.gain.exponentialRampToValueAtTime(.0001, time + .045);
+          src.connect(filter);
+          filter.connect(gain);
+          gain.connect(this.master);
+          src.start(time);
+          src.stop(time + .055);
+        }
+
+        bass(time, freq) {
+          const filter = this.ctx.createBiquadFilter();
+          filter.type = "lowpass";
+          filter.frequency.value = 250;
+          filter.connect(this.master);
+          this.tone("sawtooth", freq, time, .17, .11, filter);
+        }
+
+        noiseHit(start, duration, volume, frequency, type = "bandpass") {
+          if (!this.ctx || !this.noiseBuffer) return;
+          const src = this.ctx.createBufferSource();
+          const filter = this.ctx.createBiquadFilter();
+          const gain = this.ctx.createGain();
+          src.buffer = this.noiseBuffer;
+          filter.type = type;
+          filter.frequency.value = frequency;
+          gain.gain.setValueAtTime(0.0001, start);
+          gain.gain.exponentialRampToValueAtTime(volume, start + .02);
+          gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+          src.connect(filter);
+          filter.connect(gain);
+          gain.connect(this.master);
+          src.start(start);
+          src.stop(start + duration + .02);
+        }
+
+        crowdSwell(power = .5) {
+          this.ensure();
+          if (!this.ctx) return;
+          const now = this.ctx.currentTime;
+          this.noiseHit(now, 1.3, .025 * power, 900, "bandpass");
+          this.noiseHit(now + .12, .9, .018 * power, 2100, "bandpass");
+        }
+
+        stageZap() {
+          this.ensure();
+          if (!this.ctx || this.muted) return;
+          const now = this.ctx.currentTime;
+          if (Math.random() < .55) {
+            this.tone("sine", 1180 + Math.random() * 360, now, .05, .018);
+            this.noiseHit(now, .08, .015, 5200, "highpass");
+          }
+        }
+
+        jump() {
+          this.ensure();
+          if (!this.ctx) return;
+          const now = this.ctx.currentTime;
+          const part = this.tone("triangle", 300, now, .18, .16);
+          if (part) part.osc.frequency.exponentialRampToValueAtTime(620, now + .13);
+          this.noiseHit(now, .09, .035, 3800, "highpass");
+        }
+
+        collect(type = "mic") {
+          this.ensure();
+          if (!this.ctx) return;
+          const now = this.ctx.currentTime;
+          const notes = type === "vinyl" ? [420, 630, 840] : type === "casque" ? [300, 520, 760] : [560, 820];
+          notes.forEach((freq, i) => this.tone("sine", freq, now + i * .045, .14, .12));
+          if (type === "vinyl") this.scratch(.12);
+        }
+
+        bonus(type = "flow") {
+          this.ensure();
+          if (!this.ctx) return;
+          const now = this.ctx.currentTime;
+          [392, 588, 784, 1176].forEach((freq, i) => this.tone("sawtooth", freq, now + i * .04, .18, .11));
+          this.bassDrop(.42);
+          if (type === "vip") this.airHorn(.42);
+        }
+
+        pass(combo = 1) {
+          this.ensure();
+          if (!this.ctx) return;
+          const now = this.ctx.currentTime;
+          this.tone("square", 660 + Math.min(combo, 10) * 18, now, .08, .045);
+          if (combo % 5 === 0) this.crowdSwell(.9);
+        }
+
+        scratch(length = .09) {
+          if (!this.ctx || !this.noiseBuffer) return;
+          const now = this.ctx.currentTime;
+          const src = this.ctx.createBufferSource();
+          const filter = this.ctx.createBiquadFilter();
+          const gain = this.ctx.createGain();
+          src.buffer = this.noiseBuffer;
+          src.playbackRate.setValueAtTime(1.9, now);
+          src.playbackRate.exponentialRampToValueAtTime(.55, now + length);
+          filter.type = "bandpass";
+          filter.frequency.setValueAtTime(850, now);
+          filter.frequency.exponentialRampToValueAtTime(2800, now + length);
+          gain.gain.setValueAtTime(.12, now);
+          gain.gain.exponentialRampToValueAtTime(.0001, now + length);
+          src.connect(filter);
+          filter.connect(gain);
+          gain.connect(this.master);
+          src.start(now);
+          src.stop(now + length + .02);
+        }
+
+        bassDrop(duration = .5) {
+          if (!this.ctx) return;
+          const now = this.ctx.currentTime;
+          const part = this.tone("sine", 96, now, duration, .18);
+          if (part) part.osc.frequency.exponentialRampToValueAtTime(34, now + duration * .95);
+        }
+
+        impact() {
+          this.ensure();
+          if (!this.ctx) return;
+          const now = this.ctx.currentTime;
+          [150, 95, 55].forEach((freq, i) => this.tone("square", freq, now + i * .06, .18, .13));
+          if (this.noiseBuffer) {
+            const src = this.ctx.createBufferSource();
+            const gain = this.ctx.createGain();
+            src.buffer = this.noiseBuffer;
+            gain.gain.setValueAtTime(.18, now);
+            gain.gain.exponentialRampToValueAtTime(.0001, now + .25);
+            src.connect(gain);
+            gain.connect(this.master);
+            src.start(now);
+            src.stop(now + .28);
+          }
+          this.bassDrop(.42);
+        }
+
+        applause() {
+          this.ensure();
+          if (!this.ctx || !this.noiseBuffer) return;
+          const now = this.ctx.currentTime;
+          for (let i = 0; i < 11; i += 1) {
+            const src = this.ctx.createBufferSource();
+            const filter = this.ctx.createBiquadFilter();
+            const gain = this.ctx.createGain();
+            const t = now + i * .052;
+            src.buffer = this.noiseBuffer;
+            filter.type = "bandpass";
+            filter.frequency.value = 700 + Math.random() * 2300;
+            gain.gain.setValueAtTime(.0001, t);
+            gain.gain.exponentialRampToValueAtTime(.075, t + .012);
+            gain.gain.exponentialRampToValueAtTime(.0001, t + .09);
+            src.connect(filter);
+            filter.connect(gain);
+            gain.connect(this.master);
+            src.start(t);
+            src.stop(t + .1);
+          }
+        }
+
+        airHorn(delay = 0) {
+          this.ensure();
+          if (!this.ctx) return;
+          const now = this.ctx.currentTime + delay;
+          [466, 622].forEach((freq, i) => {
+            const part = this.tone("sawtooth", freq, now + i * .018, .56, .16);
+            if (part) part.osc.frequency.linearRampToValueAtTime(freq * .86, now + .52);
+          });
+        }
+      }
+
+      const audio = new AudioEngine();
+
+      function resize() {
+        state.w = window.innerWidth;
+        state.h = window.innerHeight;
+        const rawDpr = window.devicePixelRatio || 1;
+        const area = state.w * state.h;
+        const cap = state.w < 760 ? 1.25 : area > 1100000 ? 1.35 : 1.6;
+        state.dpr = Math.min(rawDpr, cap);
+        state.scale = clamp(Math.min(state.w / 1180, state.h / 720), .72, 1.18);
+        canvas.width = Math.floor(state.w * state.dpr);
+        canvas.height = Math.floor(state.h * state.dpr);
+        canvas.style.width = state.w + "px";
+        canvas.style.height = state.h + "px";
+        ctx.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+        seedAmbient();
+        if (state.player) state.player.x = playerX();
+      }
+
+      function seedAmbient() {
+        const crowdCap = state.w < 760 ? 84 : 130;
+        const crowdCount = Math.min(crowdCap, Math.floor((state.w * state.h) / 11200));
+        if (state.crowd.length !== crowdCount) {
+          state.crowd = Array.from({ length: crowdCount }, (_, i) => ({
+            x: Math.random(),
+            y: Math.random(),
+            color: [COLORS.cyan, COLORS.pink, COLORS.gold, COLORS.violet, COLORS.green][i % 5],
+            phase: Math.random() * Math.PI * 2,
+            h: .45 + Math.random() * .7
+          }));
+        }
+        if (state.smoke.length !== 36) {
+          state.smoke = Array.from({ length: 36 }, () => ({
+            x: Math.random() * state.w,
+            y: Math.random() * state.h,
+            r: 28 + Math.random() * 90,
+            speed: .035 + Math.random() * .08,
+            alpha: .035 + Math.random() * .065
+          }));
+        }
+      }
+
+      function newPlayer() {
+        return {
+          x: playerX(),
+          y: state.h * .43,
+          visualY: state.h * .43,
+          vy: 0,
+          rot: 0,
+          targetRot: 0,
+          radius: 25 * state.scale,
+          jumpSquash: 0,
+          arm: 0,
+          animState: "idle",
+          animStart: performance.now(),
+          jumpAnimUntil: 0
+        };
+      }
+
+      function playerX() {
+        return state.w < 700 ? state.w * .28 : state.w * .27;
+      }
+
+      function startGame() {
+        state.phase = "playing";
+        state.time = performance.now();
+        state.runTime = 0;
+        state.distance = 0;
+        state.score = 0;
+        state.displayScore = 0;
+        state.mics = 0;
+        state.combo = 0;
+        state.obstaclesPassed = 0;
+        state.scroll = 0;
+        state.cameraShake = 0;
+        state.sceneStage = 0;
+        state.player = newPlayer();
+        state.player.animState = "idle";
+        state.player.animStart = performance.now();
+        state.player.jumpAnimUntil = 0;
+        state.obstacles = [];
+        state.pickups = [];
+        state.particles = [];
+        state.confetti = [];
+        state.floaters = [];
+        state.bonuses = { vip: 0, flow: 0 };
+        state.invincible = state.secretInvincible;
+        state.pauseStarted = 0;
+        state.lastResult = null;
+        state.pendingRecord = false;
+        state.nextObstacleAt = 880;
+        state.nextPickupAt = 1250;
+        audio.ensure();
+        audio.startBeat();
+        setPauseOverlay(false);
+        showScreen(null);
+        flashToast(state.invincible ? "Showtime VIP" : "Showtime");
+      }
+
+      function jump() {
+        if (state.phase === "home" || state.phase === "over") return;
+        if (state.phase !== "playing") return;
+        const now = performance.now();
+        state.player.vy = -520 * state.scale;
+        state.player.jumpSquash = .65;
+        state.player.animState = "jump";
+        state.player.animStart = now;
+        state.player.jumpAnimUntil = now + 280;
+        burst(state.player.x - 18 * state.scale, state.player.y + 20 * state.scale, COLORS.gold, 14, .42);
+        audio.jump();
+      }
+
+      function isGameplayPhase() {
+        return state.phase === "playing" || state.phase === "paused";
+      }
+
+      function setPauseOverlay(active) {
+        pauseOverlay.classList.toggle("is-active", active);
+        pauseOverlay.setAttribute("aria-hidden", String(!active));
+      }
+
+      function togglePause(now = performance.now()) {
+        if (state.phase === "playing") {
+          state.phase = "paused";
+          state.pauseStarted = now;
+          setPauseOverlay(true);
+          audio.stopBeat();
+          flashToast("Pause");
+          return;
+        }
+
+        if (state.phase === "paused") {
+          const pauseMs = Math.max(0, now - (state.pauseStarted || now));
+          if (state.bonuses.vip > state.pauseStarted) state.bonuses.vip += pauseMs;
+          if (state.bonuses.flow > state.pauseStarted) state.bonuses.flow += pauseMs;
+          if (state.player) {
+            state.player.animStart += pauseMs;
+            state.player.jumpAnimUntil += pauseMs;
+          }
+          state.pauseStarted = 0;
+          state.phase = "playing";
+          setPauseOverlay(false);
+          if (!audio.muted) audio.startBeat();
+          flashToast("Reprise");
+        }
+      }
+
+      function update(dt, now) {
+        updatePerformance(dt);
+        if (state.phase !== "paused") {
+          updateAmbient(dt);
+          updateParticles(dt);
+          updateConfetti(dt);
+          updateFloaters(dt);
+          if (state.phase !== "playing") state.scroll += 52 * dt / 1000;
+        }
+
+        if (state.phase === "playing") {
+          state.runTime += dt / 1000;
+          const speed = currentSpeed();
+          state.scroll += speed * dt / 1000;
+          state.distance += speed * dt / 1000 * .075;
+          updateSceneStage(now);
+          updatePlayer(dt, now);
+          updateSpawns(dt, now);
+          updateObstacles(dt);
+          updatePickups(dt, now);
+          checkCollisions(now);
+          state.cameraShake = Math.max(0, state.cameraShake - dt * .025);
+        }
+
+        updateUI(now, dt);
+      }
+
+      function updatePerformance(dt) {
+        state.frameId += 1;
+        state.avgFrameMs += (dt - state.avgFrameMs) * .06;
+        if (state.avgFrameMs > 24) state.perfQuality = Math.max(.42, state.perfQuality - .025);
+        else if (state.avgFrameMs < 18.5) state.perfQuality = Math.min(1, state.perfQuality + .01);
+      }
+
+      function effectQuality() {
+        const areaBias = state.w * state.h > 1100000 ? .72 : state.w * state.h > 760000 ? .84 : 1;
+        return clamp(state.perfQuality * areaBias * MOBILE_EFFECT_BIAS, .28, 1);
+      }
+
+      function currentSpeed() {
+        return (238 + Math.min(240, state.runTime * 5.4 + state.distance * .045)) * state.scale;
+      }
+
+      function difficulty() {
+        return clamp(state.runTime / 95 + state.distance / 2600, 0, 1);
+      }
+
+      function scenicProgress() {
+        if (FORCED_SCENE_PROGRESS !== null) return FORCED_SCENE_PROGRESS;
+        return clamp(state.distance / SCENE_DISTANCE_MAX, 0, 1);
+      }
+
+      function sceneStageIndex(progress = scenicProgress()) {
+        let index = 0;
+        for (let i = 1; i < SCENE_STAGES.length; i += 1) {
+          if (progress >= SCENE_STAGES[i].threshold) index = i;
+        }
+        return index;
+      }
+
+      function currentScene() {
+        const progress = scenicProgress();
+        if (state.sceneCache && Math.abs(progress - state.sceneCacheProgress) < .0025) return state.sceneCache;
+        const index = sceneStageIndex(progress);
+        const nextIndex = Math.min(index + 1, SCENE_STAGES.length - 1);
+        const current = SCENE_STAGES[index];
+        const next = SCENE_STAGES[nextIndex];
+        const span = Math.max(.001, (index === nextIndex ? 1 : next.threshold) - current.threshold);
+        const localProgress = clamp((progress - current.threshold) / span, 0, 1);
+        const mix = index === nextIndex ? 0 : smoothstep(localProgress);
+        const scene = {
+          index,
+          nextIndex,
+          mix,
+          localProgress,
+          label: current.label,
+          progress,
+          primaryRgb: mixRgb(current.primary, next.primary, mix),
+          accentRgb: mixRgb(current.accent, next.accent, mix),
+          warmRgb: mixRgb(current.warm, next.warm, mix),
+          skyRgb: mixRgb(current.sky, next.sky, mix)
+        };
+        scene.primary = rgbCss(scene.primaryRgb);
+        scene.accent = rgbCss(scene.accentRgb);
+        scene.warm = rgbCss(scene.warmRgb);
+        scene.sky = rgbCss(scene.skyRgb);
+        for (const prop of SCENE_NUMERIC_PROPS) {
+          scene[prop] = lerp(current[prop], next[prop], mix);
+        }
+        state.sceneCache = scene;
+        state.sceneCacheProgress = progress;
+        return scene;
+      }
+
+      function updateSceneStage(now) {
+        const scene = currentScene();
+        if (scene.index === state.sceneStage) return;
+        state.sceneStage = scene.index;
+        flashToast(`${scene.index + 1} ${scene.label}`);
+        burst(state.w * .5, state.h * .28, scene.primary, 34 + scene.index * 8, .7 + scene.energy * .45);
+        audio.crowdSwell(.55 + scene.energy * .45);
+        if (scene.index >= 3) audio.airHorn(.08);
+      }
+
+      function obstacleInterval() {
+        return lerp(1660, 1050, difficulty());
+      }
+
+      function gapSize() {
+        return lerp(230, 142, difficulty()) * state.scale;
+      }
+
+      function updatePlayer(dt, now) {
+        const p = state.player;
+        const seconds = dt / 1000;
+        p.vy += 1280 * state.scale * seconds;
+        p.y += p.vy * seconds;
+        p.x = playerX();
+        p.targetRot = clamp(p.vy / (1700 * state.scale), -0.16, 0.22);
+        p.rot += (p.targetRot - p.rot) * Math.min(1, seconds * 5.2);
+        p.visualY += (p.y - p.visualY) * Math.min(1, seconds * 18);
+        p.arm += seconds * 8;
+        p.jumpSquash = Math.max(0, p.jumpSquash - seconds * 7.5);
+        p.radius = 25 * state.scale;
+        const keepJumpReadable = now < p.jumpAnimUntil && p.vy < 130 * state.scale;
+        const desiredAnim = keepJumpReadable || p.vy < -95 * state.scale ? "jump" : p.vy > 175 * state.scale ? "fall" : "idle";
+        setPlayerAnimation(desiredAnim, now);
+        if (p.y < 22 * state.scale || p.y > state.h - 26 * state.scale) {
+          if (state.invincible) {
+            const minY = 28 * state.scale;
+            const maxY = state.h - 34 * state.scale;
+            const hitTop = p.y < minY;
+            p.y = clamp(p.y, minY, maxY);
+            p.visualY = p.y;
+            p.vy = hitTop ? Math.abs(p.vy) * .22 + 120 * state.scale : -380 * state.scale;
+            p.jumpAnimUntil = now + 180;
+            burst(p.x, p.y, COLORS.gold, 18, .38);
+          } else {
+            endGame(now, "bounds");
+          }
+        }
+      }
+
+      function setPlayerAnimation(name, now) {
+        const p = state.player;
+        if (!p || p.animState === name) return;
+        p.animState = name;
+        p.animStart = now;
+      }
+
+      function updateSpawns(dt, now) {
+        state.nextObstacleAt -= dt;
+        state.nextPickupAt -= dt;
+        if (state.nextObstacleAt <= 0) {
+          spawnObstacle();
+          state.nextObstacleAt = obstacleInterval() + random(-120, 160);
+        }
+        if (state.nextPickupAt <= 0) {
+          spawnPickup(now);
+          state.nextPickupAt = random(900, 1550);
+        }
+      }
+
+      function spawnObstacle() {
+        const topSafe = Math.max(100 * state.scale, state.h * .16);
+        const bottomSafe = Math.max(120 * state.scale, state.h * .2);
+        const gap = gapSize();
+        const gapY = random(topSafe + gap / 2, state.h - bottomSafe - gap / 2);
+        const width = random(76, 112) * state.scale;
+        const kind = ["speaker", "truss", "led", "light", "case"][Math.floor(Math.random() * 5)];
+        const obstacle = {
+          x: state.w + width,
+          w: width,
+          gapY,
+          gap,
+          kind,
+          passed: false,
+          color: [COLORS.cyan, COLORS.pink, COLORS.gold, COLORS.violet][state.obstaclesPassed % 4],
+          seed: Math.random() * Math.PI * 2
+        };
+        state.obstacles.push(obstacle);
+      }
+
+      function spawnPickup(now) {
+        if (state.obstacles.length === 0) return;
+        const candidate = state.obstacles[state.obstacles.length - 1];
+        if (!candidate || candidate.x < state.w * .42) return;
+        const roll = Math.random();
+        let type = "mic";
+        if (roll > .94) type = "vip";
+        else if (roll > .82) type = "flow";
+        else if (roll > .62) type = "casque";
+        else if (roll > .35) type = "vinyl";
+        state.pickups.push({
+          type,
+          x: candidate.x + candidate.w + random(54, 140) * state.scale,
+          y: candidate.gapY + random(-candidate.gap * .28, candidate.gap * .28),
+          r: (type === "vip" ? 18 : 15) * state.scale,
+          phase: Math.random() * Math.PI * 2,
+          born: now,
+          taken: false
+        });
+      }
+
+      function updateObstacles(dt) {
+        const speed = currentSpeed();
+        for (const obstacle of state.obstacles) {
+          obstacle.x -= speed * dt / 1000;
+          if (!obstacle.passed && obstacle.x + obstacle.w < state.player.x - state.player.radius) {
+            obstacle.passed = true;
+            state.obstaclesPassed += 1;
+            state.combo += 1;
+            addScore(3 + Math.floor(state.combo / 4));
+            audio.pass(state.combo);
+            floater(state.player.x, state.player.y - 46 * state.scale, `+${3 + Math.floor(state.combo / 4)}`, COLORS.gold);
+            if (state.combo % 5 === 0) flashToast(`Combo x${state.combo}`);
+          }
+        }
+        state.obstacles = state.obstacles.filter(obstacle => obstacle.x + obstacle.w > -80 * state.scale);
+      }
+
+      function updatePickups(dt, now) {
+        const speed = currentSpeed();
+        for (const item of state.pickups) {
+          item.x -= speed * dt / 1000;
+          item.y += Math.sin(now * .004 + item.phase) * .018 * dt;
+        }
+        state.pickups = state.pickups.filter(item => item.x > -80 * state.scale && !item.taken);
+      }
+
+      function checkCollisions(now) {
+        const p = state.player;
+        const hit = playerHitbox();
+        const vip = state.invincible || isActive("vip", now);
+
+        for (const item of state.pickups) {
+          if (circleRect(item.x, item.y, item.r, hit)) {
+            collectPickup(item, now);
+          }
+        }
+
+        if (vip) return;
+        for (const obstacle of state.obstacles) {
+          const top = { x: obstacle.x, y: 0, w: obstacle.w, h: obstacle.gapY - obstacle.gap / 2 };
+          const bottom = { x: obstacle.x, y: obstacle.gapY + obstacle.gap / 2, w: obstacle.w, h: state.h - (obstacle.gapY + obstacle.gap / 2) };
+          if (rects(hit, top) || rects(hit, bottom)) {
+            endGame(now, "obstacle");
+            return;
+          }
+        }
+      }
+
+      function playerHitbox() {
+        const p = state.player;
+        return {
+          x: p.x - 18 * state.scale,
+          y: p.y - 32 * state.scale,
+          w: 44 * state.scale,
+          h: 64 * state.scale
+        };
+      }
+
+      function collectPickup(item, now) {
+        item.taken = true;
+        const info = PICKUPS[item.type];
+        if (item.type === "mic") state.mics += 1;
+        if (info.score) addScore(info.score);
+        if (info.bonus) {
+          state.bonuses[info.bonus] = now + info.duration;
+          flashToast(info.label);
+          audio.bonus(info.bonus);
+        } else {
+          audio.collect(item.type);
+        }
+        state.combo += 1;
+        burst(item.x, item.y, info.color, item.type === "vip" ? 34 : 22, .7);
+        floater(item.x, item.y - 18 * state.scale, info.score ? `+${scoreWithBonus(info.score)}` : info.label, info.color);
+      }
+
+      function addScore(base) {
+        state.score += scoreWithBonus(base);
+      }
+
+      function scoreWithBonus(base) {
+        return Math.round(base * (isActive("flow", performance.now()) ? 2 : 1));
+      }
+
+      function isActive(name, now) {
+        return state.bonuses[name] > now;
+      }
+
+      function endGame(now, source = "crash") {
+        if (state.phase !== "playing") return;
+        state.phase = "over";
+        state.cameraShake = 12;
+        if (state.player) {
+          const minImpactY = 68 * state.scale;
+          const maxImpactY = source === "bounds" ? state.h - Math.max(150, 110 * state.scale) : state.h - 92 * state.scale;
+          state.player.y = clamp(state.player.y, minImpactY, Math.max(minImpactY, maxImpactY));
+          state.player.visualY = state.player.y;
+          state.player.vy = 0;
+          state.player.animState = "hit";
+          state.player.animStart = now;
+          state.player.jumpAnimUntil = 0;
+        }
+        audio.impact();
+        window.setTimeout(() => audio.applause(), 160);
+        const finalScore = Math.round(state.score + state.distance * .32);
+        state.score = finalScore;
+        state.lastResult = {
+          score: finalScore,
+          distance: Math.floor(state.distance),
+          mics: state.mics,
+          best: Math.max(bestScore(), finalScore),
+          time: Math.floor(state.runTime)
+        };
+        burst(state.player.x, state.player.y, COLORS.pink, 70, 1.2);
+        const localRecord = qualifies(finalScore);
+        state.pendingRecord = finalScore > 0;
+        if (localRecord) {
+          audio.airHorn();
+          launchConfetti();
+        }
+        window.setTimeout(showGameOver, 760);
+      }
+
+      function showGameOver() {
+        const result = state.lastResult;
+        if (!result) return;
+        document.getElementById("finalScore").textContent = String(result.score);
+        document.getElementById("finalDistance").textContent = `${result.distance} m`;
+        document.getElementById("finalMics").textContent = String(result.mics);
+        document.getElementById("finalBest").textContent = String(result.best);
+        document.getElementById("rankTitle").textContent = titleForScore(result.score);
+        nameForm.classList.toggle("is-active", state.pendingRecord);
+        renderScores(overScoreTable);
+        showScreen("gameOverScreen");
+        if (state.pendingRecord) {
+          state.scoreSubmitting = false;
+          scoreSubmitBtn.disabled = false;
+          scoreSaveStatus.textContent = "Valide ton score pour apparaitre dans la base Wix.";
+          scoreSaveStatus.className = "formHint";
+          playerFirstName.value = "";
+          playerEmail.value = "";
+          window.setTimeout(() => playerFirstName.focus({ preventScroll: true }), 100);
+        }
+      }
+
+      function titleForScore(score) {
+        if (score >= 1600) return "💎 Légende du Rap";
+        if (score >= 1050) return "👑 Headliner";
+        if (score >= 650) return "🔥 Freestyler";
+        if (score >= 280) return "🎙 MC";
+        return "🎤 Rookie";
+      }
+
+      function updateAmbient(dt) {
+        for (const smoke of state.smoke) {
+          smoke.x += smoke.speed * dt;
+          smoke.y -= smoke.speed * dt * .16;
+          if (smoke.x - smoke.r > state.w) smoke.x = -smoke.r;
+          if (smoke.y + smoke.r < 0) smoke.y = state.h + smoke.r;
+        }
+      }
+
+      function updateParticles(dt) {
+        state.particles = state.particles.filter(p => {
+          p.age += dt;
+          p.x += p.vx * dt;
+          p.y += p.vy * dt;
+          p.vy += .00042 * dt;
+          return p.age < p.life;
+        });
+      }
+
+      function updateConfetti(dt) {
+        state.confetti = state.confetti.filter(c => {
+          c.age += dt;
+          c.x += c.vx * dt;
+          c.y += c.vy * dt;
+          c.vy += .00028 * dt;
+          c.rot += c.spin * dt;
+          return c.age < c.life && c.y < state.h + 60;
+        });
+      }
+
+      function updateFloaters(dt) {
+        state.floaters = state.floaters.filter(f => {
+          f.age += dt;
+          f.y -= dt * .055;
+          return f.age < f.life;
+        });
+      }
+
+      function updateUI(now, dt) {
+        const uiNow = state.phase === "paused" && state.pauseStarted ? state.pauseStarted : now;
+        const t = Math.min(1, dt / 180);
+        state.displayScore += (state.score - state.displayScore) * t;
+        scoreText.textContent = String(Math.round(state.displayScore));
+        bestText.textContent = String(Math.max(bestScore(), Math.round(state.score)));
+        distanceText.textContent = `${Math.floor(state.distance)} m`;
+        hud.classList.toggle("is-hidden", !isGameplayPhase());
+
+        const vipLeft = Math.max(0, Math.ceil((state.bonuses.vip - uiNow) / 1000));
+        vipPill.textContent = state.invincible ? "VIP PRIVE" : `VIP ${vipLeft}s`;
+        vipPill.classList.toggle("is-on", isGameplayPhase() && (state.invincible || vipLeft > 0));
+
+        const flowLeft = Math.max(0, Math.ceil((state.bonuses.flow - uiNow) / 1000));
+        flowPill.textContent = `Flow x2 ${flowLeft}s`;
+        flowPill.classList.toggle("is-on", isGameplayPhase() && flowLeft > 0);
+
+        comboPill.textContent = `Combo x${Math.max(1, state.combo)}`;
+        comboPill.classList.toggle("is-on", isGameplayPhase() && state.combo >= 3);
+
+        const soundState = audio.muted ? "off" : "on";
+        if (soundBtn.dataset.state !== soundState) {
+          soundBtn.dataset.state = soundState;
+          const icon = audio.muted ? "ui_round_mute.png" : "ui_round_sound.png";
+          soundBtn.innerHTML = `<img class="soundIcon" src="assets/${icon}" alt="">Son`;
+        }
+        soundBtn.setAttribute("aria-pressed", String(!audio.muted));
+        volumeRange.value = String(audio.volume);
+      }
+
+      function draw(now) {
+        ctx.save();
+        const shake = state.cameraShake;
+        if (shake > 0) ctx.translate((Math.random() - .5) * shake, (Math.random() - .5) * shake);
+        drawBackground(now);
+        drawStageDeck(now);
+        if (isGameplayPhase() || state.phase === "over") {
+          drawPickups(now);
+          drawObstacles(now);
+          drawPlayer(now);
+        } else {
+          drawAttractMode(now);
+        }
+        drawParticles();
+        drawConfetti();
+        drawFloaters();
+        ctx.restore();
+      }
+
+      function drawBackground(now) {
+        const scene = currentScene();
+        const quality = effectQuality();
+        if (drawFestivalBackground(now, scene)) {
+          drawSceneSetPieces(now, scene, quality);
+          drawSceneCityPulse(now, scene, quality);
+          drawSceneStageLed(now, scene, quality);
+          drawSceneLasers(now, scene, quality);
+          drawScenePyro(now, scene, quality);
+          drawSceneCrowd(now, scene, quality);
+          if (quality > .55) drawSceneHolograms(now, scene, quality);
+          if (quality > .62) drawSceneSmoke(now, scene, quality);
+          if (quality > .5) drawSceneConfetti(now, scene, quality);
+          drawSceneVignette(scene);
+          return;
+        }
+        const g = ctx.createLinearGradient(0, 0, 0, state.h);
+        g.addColorStop(0, "#140728");
+        g.addColorStop(.46, "#090818");
+        g.addColorStop(1, "#04040a");
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, state.w, state.h);
+
+        drawParallaxBuildings(now);
+        drawLedScreens(now);
+        drawDJ(now);
+        drawLasers(now);
+        drawCrowd(now);
+        drawSmoke();
+        drawGraffiti(now);
+      }
+
+      function drawCoverBackgroundImage(img, alpha = 1, pan = .5) {
+        const canvasRatio = state.w / state.h;
+        const imageRatio = img.naturalWidth / img.naturalHeight;
+        let sx = 0;
+        let sy = 0;
+        let sw = img.naturalWidth;
+        let sh = img.naturalHeight;
+        if (imageRatio > canvasRatio) {
+          sw = img.naturalHeight * canvasRatio;
+          sx = (img.naturalWidth - sw) * clamp(pan, 0, 1);
+        } else {
+          sh = img.naturalWidth / canvasRatio;
+          sy = (img.naturalHeight - sh) / 2;
+        }
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.drawImage(img, sx, sy, sw, sh, 0, 0, state.w, state.h);
+        ctx.restore();
+      }
+
+      function drawLoopingPanoramaBackground(img, alpha = 1, offsetBias = 0) {
+        const targetH = Math.min(state.h * BACKGROUND_DEZOOM_HEIGHT, img.naturalHeight * BACKGROUND_MAX_UPSCALE);
+        const targetW = img.naturalWidth * (targetH / img.naturalHeight);
+        const y = Math.max(0, state.h * .04 - targetH * .02);
+        const scrollX = state.scroll * BACKGROUND_LOOP_SPEED + offsetBias * targetW;
+        const offset = -positiveModulo(scrollX, targetW);
+
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        for (let x = offset - targetW; x < state.w + targetW; x += targetW) {
+          ctx.drawImage(img, x, y, targetW, targetH);
+        }
+
+        const fillY = y + targetH;
+        if (fillY < state.h) {
+          const asphalt = ctx.createLinearGradient(0, fillY, 0, state.h);
+          asphalt.addColorStop(0, "rgba(5,5,16,.18)");
+          asphalt.addColorStop(.35, "rgba(7,7,18,.72)");
+          asphalt.addColorStop(1, "rgba(3,3,10,.98)");
+          ctx.fillStyle = asphalt;
+          ctx.fillRect(0, fillY - 1, state.w, state.h - fillY + 1);
+        }
+        ctx.restore();
+      }
+
+      function backgroundStagePan(index, localProgress, anchors) {
+        const base = anchors[index] !== undefined ? anchors[index] : .5;
+        const drift = (clamp(localProgress, 0, 1) - .5) * BACKGROUND_STAGE_DRIFT;
+        return clamp(base + drift, 0, 1);
+      }
+
+      function backgroundPhotoMix(scene) {
+        if (scene.nextIndex === scene.index) return 0;
+        return smoothstep(clamp((scene.localProgress - BACKGROUND_PHOTO_FADE_START) / (1 - BACKGROUND_PHOTO_FADE_START), 0, 1));
+      }
+
+      function drawFestivalBackground(now, scene) {
+        const stageKey = STAGE_BACKGROUND_KEYS[scene.index];
+        const nextStageKey = STAGE_BACKGROUND_KEYS[scene.nextIndex];
+        const hasStageBackground = spriteReady(stageKey);
+
+        if (hasStageBackground) {
+          const mix = backgroundPhotoMix(scene);
+          drawLoopingPanoramaBackground(sprites[stageKey], 1, scene.index * .17);
+          if (scene.nextIndex !== scene.index && mix > .03 && spriteReady(nextStageKey)) {
+            drawLoopingPanoramaBackground(sprites[nextStageKey], mix, scene.nextIndex * .17);
+          }
+        } else if (spriteReady("background_full")) {
+          const mix = backgroundPhotoMix(scene);
+          drawLoopingPanoramaBackground(sprites.background_full, 1, scene.index * .17);
+          if (mix > .03) {
+            drawLoopingPanoramaBackground(sprites.background_full, mix, scene.nextIndex * .17);
+          }
+        } else {
+          if (!spriteReady("background_festival")) return false;
+          drawCoverBackgroundImage(sprites.background_festival);
+        }
+
+        const mood = ctx.createLinearGradient(0, 0, 0, state.h);
+        mood.addColorStop(0, rgbCss(scene.skyRgb, .18 + scene.energy * .06));
+        mood.addColorStop(.42, rgbCss(scene.primaryRgb, .05 + scene.led * .045));
+        mood.addColorStop(.72, rgbCss(scene.warmRgb, scene.sunset * .12));
+        mood.addColorStop(1, "rgba(2,2,10,.28)");
+        ctx.fillStyle = mood;
+        ctx.fillRect(0, 0, state.w, state.h);
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        const stageGlow = ctx.createRadialGradient(state.w * .58, state.h * .32, 0, state.w * .58, state.h * .38, state.w * (.24 + scene.energy * .18));
+        stageGlow.addColorStop(0, rgbCss(scene.primaryRgb, .18 + scene.energy * .16));
+        stageGlow.addColorStop(.48, rgbCss(scene.accentRgb, .08 + scene.led * .08));
+        stageGlow.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.fillStyle = stageGlow;
+        ctx.fillRect(0, 0, state.w, state.h);
+        if (scene.sunset > .05) {
+          const sunsetGlow = ctx.createRadialGradient(state.w * .28, state.h * .45, 0, state.w * .28, state.h * .48, state.w * .36);
+          sunsetGlow.addColorStop(0, rgbCss(scene.warmRgb, scene.sunset * .22));
+          sunsetGlow.addColorStop(1, "rgba(0,0,0,0)");
+          ctx.fillStyle = sunsetGlow;
+          ctx.fillRect(0, 0, state.w, state.h);
+        }
+        ctx.restore();
+        return true;
+      }
+
+      function drawSceneSetPieces(now, scene, quality) {
+        const currentAlpha = .28 + (1 - scene.mix) * .42;
+        drawSceneAct(scene.index, now, scene, quality, currentAlpha);
+        if (scene.nextIndex !== scene.index && scene.mix > .04) {
+          drawSceneAct(scene.nextIndex, now, scene, quality, scene.mix * .48);
+        }
+      }
+
+      function drawSceneAct(index, now, scene, quality, alpha) {
+        if (alpha <= .02) return;
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.globalCompositeOperation = "lighter";
+        if (index === 0) drawFestivalEntrance(now, scene);
+        else if (index === 1) drawPowerCity(now, scene, quality);
+        else if (index === 2) drawGrandStageBackdrop(now, scene);
+        else if (index === 3) drawHeadlinerBackdrop(now, scene, quality);
+        else if (index === 4) drawVipBackdrop(now, scene, quality);
+        else drawFinalBackdrop(now, scene, quality);
+        ctx.restore();
+      }
+
+      function drawFestivalEntrance(now, scene) {
+        const s = state.scale;
+        const x = state.w * .24;
+        const y = state.h * .39;
+        const w = Math.min(240 * s, state.w * .28);
+        const h = 122 * s;
+        ctx.strokeStyle = rgbCss(scene.warmRgb, .72);
+        ctx.shadowColor = rgbCss(scene.warmRgb);
+        ctx.shadowBlur = 12 * s;
+        ctx.lineWidth = 4 * s;
+        ctx.strokeRect(x - w / 2, y - h / 2, w, h);
+        ctx.beginPath();
+        ctx.moveTo(x - w * .58, y - h * .5);
+        ctx.quadraticCurveTo(x, y - h * .92, x + w * .58, y - h * .5);
+        ctx.stroke();
+        ctx.fillStyle = rgbCss(scene.primaryRgb, .22);
+        for (let i = 0; i < 8; i += 1) {
+          const lx = state.w * (.08 + i * .11);
+          const ly = state.h * (.34 + Math.sin(now * .001 + i) * .012);
+          ctx.beginPath();
+          ctx.arc(lx, ly, 5 * s, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      function drawPowerCity(now, scene, quality) {
+        const s = state.scale;
+        const base = state.h * .44;
+        const count = Math.floor((10 + quality * 10));
+        for (let i = 0; i < count; i += 1) {
+          const x = state.w * (.05 + i / count * .9);
+          const h = (64 + pseudo(i * 12.4) * 130) * s;
+          const w = (18 + pseudo(i * 15.7) * 32) * s;
+          ctx.fillStyle = rgbCss(scene.skyRgb, .3);
+          ctx.fillRect(x, base - h, w, h);
+          ctx.fillStyle = rgbCss(i % 2 ? scene.primaryRgb : scene.accentRgb, .38);
+          for (let yy = base - h + 12 * s; yy < base - 10 * s; yy += 20 * s) {
+            if ((i + yy) % 3 > 1) ctx.fillRect(x + 5 * s, yy, 5 * s, 6 * s);
+            ctx.fillRect(x + w - 10 * s, yy + 3 * s, 5 * s, 6 * s);
+          }
+        }
+        ctx.strokeStyle = rgbCss(scene.accentRgb, .38);
+        ctx.lineWidth = 2 * s;
+        for (let i = 0; i < 5; i += 1) {
+          const x = state.w * (.18 + i * .16);
+          ctx.beginPath();
+          ctx.moveTo(x, base);
+          ctx.lineTo(x + Math.sin(now * .0014 + i) * state.w * .08, state.h * .13);
+          ctx.stroke();
+        }
+      }
+
+      function drawGrandStageBackdrop(now, scene) {
+        const s = state.scale;
+        const x = state.w * .55;
+        const y = state.h * .2;
+        const w = Math.min(state.w * .5, 520 * s);
+        const h = 230 * s;
+        ctx.strokeStyle = rgbCss(scene.primaryRgb, .6);
+        ctx.shadowColor = rgbCss(scene.primaryRgb);
+        ctx.shadowBlur = 10 * s;
+        ctx.lineWidth = 4 * s;
+        ctx.strokeRect(x - w / 2, y, w, h);
+        ctx.beginPath();
+        ctx.moveTo(x - w * .55, y);
+        ctx.lineTo(x + w * .55, y);
+        ctx.moveTo(x - w * .5, y + h * .18);
+        ctx.lineTo(x + w * .5, y + h * .18);
+        ctx.stroke();
+        ctx.fillStyle = rgbCss(scene.accentRgb, .28);
+        for (let i = 0; i < 9; i += 1) {
+          const barH = (44 + Math.sin(now * .004 + i) * 26 + i * 4) * s;
+          ctx.fillRect(x - w * .32 + i * w * .08, y + h * .48 - barH, 16 * s, barH);
+        }
+        ctx.fillStyle = rgbCss(scene.warmRgb, .22);
+        ctx.fillRect(x - w * .4, y + h * .78, w * .8, 34 * s);
+      }
+
+      function drawHeadlinerBackdrop(now, scene, quality) {
+        const s = state.scale;
+        const wheelX = state.w * .17;
+        const wheelY = state.h * .36;
+        const r = Math.min(78 * s, state.w * .1);
+        ctx.strokeStyle = rgbCss(scene.accentRgb, .5);
+        ctx.shadowColor = rgbCss(scene.accentRgb);
+        ctx.shadowBlur = 9 * s;
+        ctx.lineWidth = 3 * s;
+        ctx.beginPath();
+        ctx.arc(wheelX, wheelY, r, 0, Math.PI * 2);
+        ctx.stroke();
+        for (let i = 0; i < 10; i += 1) {
+          const a = i / 10 * Math.PI * 2 + now * .00035;
+          ctx.beginPath();
+          ctx.moveTo(wheelX, wheelY);
+          ctx.lineTo(wheelX + Math.cos(a) * r, wheelY + Math.sin(a) * r);
+          ctx.stroke();
+        }
+        const bursts = Math.floor(2 + quality * 3);
+        for (let i = 0; i < bursts; i += 1) {
+          drawSparkBurst(state.w * (.42 + i * .13), state.h * (.2 + pseudo(i * 7) * .14), 28 * s, i % 2 ? scene.primaryRgb : scene.warmRgb, now * .001 + i);
+        }
+      }
+
+      function drawVipBackdrop(now, scene, quality) {
+        const s = state.scale;
+        const count = Math.floor(4 + quality * 4);
+        for (let i = 0; i < count; i += 1) {
+          const x = state.w * (.15 + i / Math.max(1, count - 1) * .72);
+          const y = state.h * (.17 + pseudo(i * 9.8) * .17);
+          const w = 48 * s;
+          const h = 68 * s;
+          ctx.strokeStyle = rgbCss(i % 2 ? scene.primaryRgb : scene.accentRgb, .55);
+          ctx.shadowColor = ctx.strokeStyle;
+          ctx.shadowBlur = 9 * s;
+          roundRect(ctx, x - w / 2, y - h / 2, w, h, 8 * s);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(x, y - h * .2);
+          ctx.lineTo(x + w * .17, y);
+          ctx.lineTo(x, y + h * .2);
+          ctx.lineTo(x - w * .17, y);
+          ctx.closePath();
+          ctx.stroke();
+        }
+        drawNeonPalm(state.w * .08, state.h * .34, 86 * s, scene.primaryRgb);
+        drawNeonPalm(state.w * .92, state.h * .34, 86 * s, scene.accentRgb);
+      }
+
+      function drawFinalBackdrop(now, scene, quality) {
+        const s = state.scale;
+        const cx = state.w * .55;
+        const cy = state.h * .31;
+        ctx.strokeStyle = rgbCss(scene.warmRgb, .64);
+        ctx.shadowColor = rgbCss(scene.warmRgb);
+        ctx.shadowBlur = 12 * s;
+        ctx.lineWidth = 5 * s;
+        ctx.beginPath();
+        ctx.arc(cx, cy, 42 * s, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.lineWidth = 4 * s;
+        for (let side = -1; side <= 1; side += 2) {
+          for (let i = 0; i < 5; i += 1) {
+            ctx.beginPath();
+            ctx.moveTo(cx + side * 34 * s, cy + (i - 2) * 8 * s);
+            ctx.lineTo(cx + side * (86 + i * 20) * s, cy - (38 - i * 13) * s);
+            ctx.stroke();
+          }
+        }
+        ctx.fillStyle = rgbCss(scene.primaryRgb, .18);
+        const flameCount = Math.floor(5 + quality * 5);
+        for (let i = 0; i < flameCount; i += 1) {
+          const x = state.w * (.17 + i / Math.max(1, flameCount - 1) * .72);
+          const h = (78 + pseudo(i * 21) * 80) * s;
+          ctx.beginPath();
+          ctx.moveTo(x, state.h * .63 - h);
+          ctx.quadraticCurveTo(x + 18 * s, state.h * .58, x, state.h * .66);
+          ctx.quadraticCurveTo(x - 18 * s, state.h * .58, x, state.h * .63 - h);
+          ctx.fill();
+        }
+      }
+
+      function drawSparkBurst(x, y, r, color, phase) {
+        ctx.save();
+        ctx.strokeStyle = rgbCss(color, .48);
+        ctx.shadowColor = rgbCss(color);
+        ctx.shadowBlur = 8 * state.scale;
+        ctx.lineWidth = 2 * state.scale;
+        for (let i = 0; i < 8; i += 1) {
+          const a = i / 8 * Math.PI * 2 + phase;
+          const inner = r * .25;
+          const outer = r * (.7 + Math.sin(phase * 5 + i) * .18);
+          ctx.beginPath();
+          ctx.moveTo(x + Math.cos(a) * inner, y + Math.sin(a) * inner);
+          ctx.lineTo(x + Math.cos(a) * outer, y + Math.sin(a) * outer);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      function drawNeonPalm(x, y, size, color) {
+        ctx.save();
+        ctx.strokeStyle = rgbCss(color, .5);
+        ctx.shadowColor = rgbCss(color);
+        ctx.shadowBlur = 9 * state.scale;
+        ctx.lineWidth = 3 * state.scale;
+        ctx.beginPath();
+        ctx.moveTo(x, y + size * .55);
+        ctx.quadraticCurveTo(x - size * .05, y, x, y - size * .42);
+        ctx.stroke();
+        for (let i = 0; i < 6; i += 1) {
+          const a = -Math.PI * .86 + i * Math.PI * .34;
+          ctx.beginPath();
+          ctx.moveTo(x, y - size * .42);
+          ctx.quadraticCurveTo(x + Math.cos(a) * size * .25, y - size * .55 + Math.sin(a) * size * .16, x + Math.cos(a) * size * .5, y - size * .42 + Math.sin(a) * size * .32);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      function drawSceneCityPulse(now, scene, quality) {
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        const baseY = state.h * .43;
+        const stripH = state.h * .16;
+        const count = Math.floor((8 + scene.led * 16) * quality);
+        for (let i = 0; i < count; i += 1) {
+          const seed = i * 17.31;
+          const x = ((pseudo(seed) * state.w * 1.18 - state.scroll * (.025 + pseudo(seed + 2) * .035)) % (state.w + 80)) - 40;
+          const barW = (4 + pseudo(seed + 3) * 10) * state.scale;
+          const barH = (18 + pseudo(seed + 4) * stripH) * (scene.energy * .45 + .28);
+          const pulse = .45 + Math.sin(now * .004 + seed) * .2;
+          ctx.fillStyle = rgbCss(i % 2 ? scene.primaryRgb : scene.accentRgb, (.08 + scene.led * .11) * pulse);
+          ctx.fillRect(x, baseY - barH, barW, barH);
+        }
+        ctx.restore();
+      }
+
+      function drawSceneStageLed(now, scene, quality) {
+        const screenW = Math.min(state.w * .34, 430 * state.scale);
+        const screenH = 100 * state.scale;
+        const x = state.w * .54 - screenW / 2;
+        const y = state.h * .19;
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        ctx.globalAlpha = .2 + scene.led * .42;
+        const glow = ctx.createRadialGradient(state.w * .54, y + screenH * .55, 0, state.w * .54, y + screenH * .55, screenW * .72);
+        glow.addColorStop(0, rgbCss(scene.primaryRgb, .22 + scene.led * .2));
+        glow.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.fillStyle = glow;
+        ctx.fillRect(x - screenW * .5, y - screenH * .8, screenW * 2, screenH * 2.4);
+
+        const bars = Math.floor((8 + scene.led * 12) * quality);
+        for (let i = 0; i < bars; i += 1) {
+          const localX = x + (i + .5) * (screenW / bars);
+          const h = (Math.sin(now * .006 + i * .77) * .5 + .5) * screenH * (.35 + scene.energy * .5);
+          ctx.fillStyle = rgbCss(i % 3 === 0 ? scene.accentRgb : scene.primaryRgb, .32 + scene.led * .28);
+          ctx.fillRect(localX - 3 * state.scale, y + screenH - h, 6 * state.scale, h);
+        }
+        if (scene.energy > .66) {
+          ctx.globalAlpha = (scene.energy - .66) * 1.25;
+          ctx.font = `900 ${Math.min(52, 46 * state.scale)}px Arial Black, Arial, sans-serif`;
+          ctx.textAlign = "center";
+          ctx.fillStyle = rgbCss(scene.warmRgb, .52);
+          ctx.shadowColor = rgbCss(scene.warmRgb);
+          ctx.shadowBlur = 10 * quality * state.scale;
+          ctx.fillText(scene.index >= 5 ? "FINAL" : "FLOW", state.w * .54, y + screenH * .68);
+        }
+        ctx.restore();
+      }
+
+      function drawSceneHolograms(now, scene, quality) {
+        if (scene.holos <= .05) return;
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        const count = Math.floor((2 + scene.holos * 6) * quality);
+        for (let i = 0; i < count; i += 1) {
+          const side = i % 2 === 0 ? -1 : 1;
+          const seed = i * 29.19;
+          const x = state.w * (.5 + side * (.22 + pseudo(seed) * .22)) + Math.sin(now * .0012 + seed) * 9 * state.scale;
+          const y = state.h * (.18 + pseudo(seed + 2) * .34);
+          const w = (30 + pseudo(seed + 4) * 24) * state.scale;
+          const h = (46 + pseudo(seed + 5) * 30) * state.scale;
+          ctx.globalAlpha = (.12 + scene.holos * .22) * (.72 + Math.sin(now * .004 + seed) * .18);
+          ctx.strokeStyle = rgbCss(i % 3 === 0 ? scene.accentRgb : scene.primaryRgb);
+          ctx.shadowColor = ctx.strokeStyle;
+          ctx.shadowBlur = 7 * quality * state.scale;
+          roundRect(ctx, x - w / 2, y - h / 2, w, h, 6 * state.scale);
+          ctx.stroke();
+          ctx.beginPath();
+          if (i % 3 === 0) {
+            ctx.moveTo(x, y - h * .22);
+            ctx.lineTo(x + w * .18, y);
+            ctx.lineTo(x, y + h * .22);
+            ctx.lineTo(x - w * .18, y);
+            ctx.closePath();
+          } else if (i % 3 === 1) {
+            ctx.moveTo(x - w * .22, y + h * .1);
+            ctx.lineTo(x - w * .08, y - h * .2);
+            ctx.lineTo(x, y + h * .02);
+            ctx.lineTo(x + w * .1, y - h * .22);
+            ctx.lineTo(x + w * .23, y + h * .1);
+          } else {
+            ctx.arc(x, y, Math.min(w, h) * .18, 0, Math.PI * 2);
+          }
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      function drawSceneLasers(now, scene, quality) {
+        const count = Math.floor((2 + scene.lasers * 8) * quality);
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        ctx.lineCap = "round";
+        for (let i = 0; i < count; i += 1) {
+          const seed = i * 41.7;
+          const originX = state.w * (.42 + pseudo(seed) * .24);
+          const originY = state.h * (.26 + pseudo(seed + 1) * .14);
+          const targetX = state.w * pseudo(seed + 4);
+          const sweep = Math.sin(now * (.0012 + pseudo(seed + 6) * .0018) + seed);
+          const targetY = state.h * (.08 + pseudo(seed + 7) * .38 + sweep * .08);
+          ctx.strokeStyle = rgbCss(i % 3 === 0 ? scene.primaryRgb : i % 3 === 1 ? scene.accentRgb : scene.warmRgb, .1 + scene.lasers * .18);
+          ctx.shadowColor = ctx.strokeStyle;
+          ctx.shadowBlur = (3 + scene.energy * 7) * quality * state.scale;
+          ctx.lineWidth = (1 + scene.energy * 1.15) * state.scale;
+          ctx.beginPath();
+          ctx.moveTo(originX, originY);
+          ctx.lineTo(targetX, targetY);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      function drawScenePyro(now, scene, quality) {
+        if (scene.pyro <= .04) return;
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        const count = Math.floor((1 + scene.pyro * 5) * quality);
+        const baseY = state.h * .67;
+        for (let i = 0; i < count; i += 1) {
+          const seed = i * 53.23;
+          const x = state.w * (.12 + (i + .5) / count * .76);
+          const height = (70 + pseudo(seed) * 120) * state.scale * (.55 + scene.pyro * .7) * (.82 + Math.sin(now * .006 + seed) * .18);
+          const width = (16 + pseudo(seed + 5) * 16) * state.scale;
+          const g = ctx.createLinearGradient(x, baseY - height, x, baseY);
+          g.addColorStop(0, rgbCss(scene.accentRgb, 0));
+          g.addColorStop(.22, rgbCss(scene.warmRgb, .78 * scene.pyro));
+          g.addColorStop(.72, rgbCss(scene.accentRgb, .45 * scene.pyro));
+          g.addColorStop(1, "rgba(0,0,0,0)");
+          ctx.fillStyle = g;
+          ctx.beginPath();
+          ctx.moveTo(x, baseY - height);
+          ctx.quadraticCurveTo(x + width, baseY - height * .46, x + width * .32, baseY);
+          ctx.quadraticCurveTo(x, baseY - height * .18, x - width * .32, baseY);
+          ctx.quadraticCurveTo(x - width, baseY - height * .46, x, baseY - height);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+
+      function drawSceneCrowd(now, scene, quality) {
+        const start = state.h * .62;
+        const count = Math.floor(state.crowd.length * (.25 + scene.crowd * .55) * quality);
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        for (let i = 0; i < count; i += 1) {
+          const dot = state.crowd[i];
+          const x = (dot.x * state.w - state.scroll * (.03 + scene.energy * .012)) % (state.w + 40);
+          const px = x < -20 ? x + state.w + 40 : x;
+          const y = start + dot.y * state.h * .31;
+          const bounce = Math.sin(now * (.0038 + scene.energy * .002) + dot.phase) * (3 + scene.energy * 6) * state.scale;
+          const colorRgb = i % 3 === 0 ? scene.primaryRgb : i % 3 === 1 ? scene.accentRgb : hexToRgb(dot.color);
+          ctx.fillStyle = rgbCss(colorRgb, .13 + scene.crowd * .2);
+          ctx.beginPath();
+          ctx.arc(px, y + bounce, (1.9 + dot.h * 2.3) * state.scale, 0, Math.PI * 2);
+          ctx.fill();
+          if (quality > .62 && scene.crowd > .55 && i % 10 === 0) {
+            ctx.strokeStyle = rgbCss(colorRgb, .18 + scene.crowd * .18);
+            ctx.lineWidth = 1.5 * state.scale;
+            ctx.beginPath();
+            ctx.moveTo(px - 3 * state.scale, y + bounce - 2 * state.scale);
+            ctx.lineTo(px - 8 * state.scale, y + bounce - (12 + pseudo(i) * 12) * state.scale);
+            ctx.moveTo(px + 3 * state.scale, y + bounce - 2 * state.scale);
+            ctx.lineTo(px + 8 * state.scale, y + bounce - (12 + pseudo(i + 2) * 12) * state.scale);
+            ctx.stroke();
+          }
+          if (quality > .54 && scene.flashes > .18 && i % 18 === 0) {
+            const flash = Math.max(0, Math.sin(now * .01 + dot.phase * 4));
+            ctx.fillStyle = rgbCss(scene.accentRgb, flash * scene.flashes * .35);
+            ctx.fillRect(px - 2 * state.scale, y + bounce - 16 * state.scale, 4 * state.scale, 3 * state.scale);
+          }
+        }
+        ctx.restore();
+      }
+
+      function drawSceneSmoke(now, scene, quality) {
+        if (scene.smoke <= .02) return;
+        ctx.save();
+        const count = Math.floor((2 + scene.smoke * 8) * quality);
+        for (let i = 0; i < count; i += 1) {
+          const seed = i * 61.13;
+          const side = i % 2 === 0 ? -1 : 1;
+          const x = state.w * (.5 + side * (.18 + pseudo(seed) * .18)) + Math.sin(now * .0008 + seed) * 20 * state.scale;
+          const lift = ((now * (.012 + pseudo(seed + 4) * .018) + pseudo(seed + 2) * 900) % 160) * state.scale;
+          const y = state.h * (.62 - pseudo(seed + 3) * .13) - lift;
+          const r = (38 + pseudo(seed + 5) * 86) * state.scale;
+          const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+          g.addColorStop(0, rgbCss(i % 2 ? scene.primaryRgb : scene.accentRgb, .02 + scene.smoke * .08));
+          g.addColorStop(.5, "rgba(255,255,255,.035)");
+          g.addColorStop(1, "rgba(255,255,255,0)");
+          ctx.fillStyle = g;
+          ctx.beginPath();
+          ctx.arc(x, y, r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+
+      function drawSceneConfetti(now, scene, quality) {
+        if (scene.confetti <= .03) return;
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        const count = Math.floor((5 + scene.confetti * 34) * quality);
+        for (let i = 0; i < count; i += 1) {
+          const seed = i * 71.47;
+          const x = (pseudo(seed) * state.w + now * (.018 + pseudo(seed + 2) * .04) + state.scroll * .04) % (state.w + 50) - 25;
+          const y = (pseudo(seed + 3) * state.h * .62 + now * (.025 + pseudo(seed + 4) * .05)) % (state.h * .66);
+          const w = (4 + pseudo(seed + 5) * 7) * state.scale;
+          const h = (7 + pseudo(seed + 6) * 12) * state.scale;
+          ctx.save();
+          ctx.translate(x, y);
+          ctx.rotate(now * .004 + seed);
+          ctx.globalAlpha = .12 + scene.confetti * .28;
+          ctx.fillStyle = rgbCss(i % 4 === 0 ? scene.primaryRgb : i % 4 === 1 ? scene.accentRgb : i % 4 === 2 ? scene.warmRgb : hexToRgb(COLORS.green), 1);
+          ctx.fillRect(-w / 2, -h / 2, w, h);
+          ctx.restore();
+        }
+        ctx.restore();
+      }
+
+      function drawSceneVignette(scene) {
+        const vignette = ctx.createRadialGradient(state.w * .5, state.h * .46, state.h * .2, state.w * .5, state.h * .5, state.h * .86);
+        vignette.addColorStop(0, "rgba(6,4,18,0)");
+        vignette.addColorStop(.62, "rgba(6,4,18,.06)");
+        vignette.addColorStop(1, `rgba(3,2,12,${.34 - scene.energy * .08})`);
+        ctx.fillStyle = vignette;
+        ctx.fillRect(0, 0, state.w, state.h);
+      }
+
+      function drawParallaxBuildings(now) {
+        const base = state.h * .48;
+        ctx.save();
+        ctx.globalAlpha = .44;
+        for (let layer = 0; layer < 2; layer += 1) {
+          const speed = (layer + 1) * .05;
+          const offset = -(state.scroll * speed) % 180;
+          for (let x = offset - 220; x < state.w + 220; x += 180) {
+            const h = (80 + ((x + layer * 73) % 120)) * state.scale;
+            ctx.fillStyle = layer ? "rgba(14,12,34,.78)" : "rgba(8,10,24,.82)";
+            ctx.fillRect(x, base - h, 110 * state.scale, h);
+            ctx.fillStyle = layer ? "rgba(24,216,255,.18)" : "rgba(255,54,95,.18)";
+            for (let yy = base - h + 16; yy < base - 12; yy += 26) {
+              ctx.fillRect(x + 12, yy, 6, 9);
+              ctx.fillRect(x + 58, yy + 3, 6, 9);
+            }
+          }
+        }
+        ctx.restore();
+      }
+
+      function drawLedScreens(now) {
+        const y = state.h * .14;
+        const screens = [
+          { x: state.w * .1, w: state.w * .18 },
+          { x: state.w * .72, w: state.w * .18 }
+        ];
+        ctx.save();
+        for (const screen of screens) {
+          ctx.fillStyle = "rgba(3,5,14,.72)";
+          roundRect(ctx, screen.x, y, screen.w, 74 * state.scale, 8);
+          ctx.fill();
+          for (let i = 0; i < 14; i += 1) {
+            const bar = (Math.sin(now * .006 + i) * .5 + .5) * 54 * state.scale;
+            ctx.fillStyle = [COLORS.cyan, COLORS.pink, COLORS.gold, COLORS.violet][i % 4] + "cc";
+            ctx.fillRect(screen.x + 10 + i * (screen.w - 20) / 14, y + 64 * state.scale - bar, 4, bar);
+          }
+        }
+        ctx.restore();
+      }
+
+      function drawDJ(now) {
+        const x = state.w * .5;
+        const y = state.h * .28;
+        const s = state.scale;
+        ctx.save();
+        ctx.globalAlpha = .8;
+        ctx.fillStyle = "rgba(5,5,14,.84)";
+        roundRect(ctx, x - 85 * s, y, 170 * s, 54 * s, 8 * s);
+        ctx.fill();
+        ctx.strokeStyle = COLORS.cyan;
+        ctx.shadowColor = COLORS.cyan;
+        ctx.shadowBlur = 14;
+        ctx.strokeRect(x - 78 * s, y + 7 * s, 156 * s, 40 * s);
+        ctx.fillStyle = COLORS.gold;
+        ctx.beginPath();
+        ctx.arc(x - 36 * s, y + 27 * s, 15 * s, 0, Math.PI * 2);
+        ctx.arc(x + 36 * s, y + 27 * s, 15 * s, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = COLORS.white;
+        ctx.beginPath();
+        ctx.arc(x, y - 12 * s + Math.sin(now * .005) * 3 * s, 18 * s, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = COLORS.pink;
+        roundRect(ctx, x - 30 * s, y - 2 * s, 60 * s, 28 * s, 10 * s);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      function drawLasers(now) {
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        ctx.lineWidth = 2;
+        [COLORS.cyan, COLORS.pink, COLORS.green, COLORS.gold].forEach((color, i) => {
+          ctx.strokeStyle = color + "9d";
+          const y = state.h * (.2 + i * .08);
+          const wave = Math.sin(now * .0018 + i) * state.h * .12;
+          ctx.beginPath();
+          ctx.moveTo(state.w * .04, y);
+          ctx.lineTo(state.w * .5, state.h * .45 + wave);
+          ctx.lineTo(state.w * .96, y + Math.cos(now * .0012 + i) * state.h * .12);
+          ctx.stroke();
+        });
+        ctx.restore();
+      }
+
+      function drawCrowd(now) {
+        const start = state.h * .63;
+        ctx.save();
+        for (const dot of state.crowd) {
+          const x = (dot.x * state.w - state.scroll * .035) % (state.w + 30);
+          const y = start + dot.y * state.h * .34;
+          const bounce = Math.sin(now * .004 + dot.phase) * 5 * state.scale;
+          ctx.fillStyle = dot.color + "cc";
+          ctx.beginPath();
+          ctx.arc(x < -20 ? x + state.w + 30 : x, y + bounce, (2.2 + dot.h * 2.8) * state.scale, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+
+      function drawSmoke() {
+        ctx.save();
+        for (const smoke of state.smoke) {
+          const g = ctx.createRadialGradient(smoke.x, smoke.y, 0, smoke.x, smoke.y, smoke.r);
+          g.addColorStop(0, `rgba(255,255,255,${smoke.alpha})`);
+          g.addColorStop(1, "rgba(255,255,255,0)");
+          ctx.fillStyle = g;
+          ctx.beginPath();
+          ctx.arc(smoke.x, smoke.y, smoke.r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+
+      function drawGraffiti(now) {
+        const y = state.h * .55;
+        ctx.save();
+        ctx.globalAlpha = .4;
+        ctx.fillStyle = "rgba(4,4,12,.42)";
+        ctx.fillRect(0, y - 40 * state.scale, state.w, 82 * state.scale);
+        ctx.font = `900 ${24 * state.scale}px Arial, sans-serif`;
+        ctx.fillStyle = COLORS.gold;
+        ctx.shadowColor = COLORS.gold;
+        ctx.shadowBlur = 18;
+        const offset = -(state.scroll * .12) % (260 * state.scale);
+        for (let x = offset - 260 * state.scale; x < state.w + 260 * state.scale; x += 260 * state.scale) {
+          ctx.fillText("RAP AIR", x, y + Math.sin(now * .001 + x) * 8 * state.scale);
+        }
+        ctx.restore();
+      }
+
+      function drawStageDeck(now) {
+        const deckY = state.h - 64 * state.scale;
+        ctx.save();
+        const photoBg = spriteReady("background_festival");
+        ctx.fillStyle = photoBg ? "rgba(7,7,16,.18)" : "rgba(7,7,16,.9)";
+        ctx.fillRect(0, deckY, state.w, state.h - deckY);
+        ctx.strokeStyle = COLORS.cyan + "77";
+        ctx.lineWidth = 2;
+        for (let x = -(state.scroll * .42) % (70 * state.scale); x < state.w; x += 70 * state.scale) {
+          ctx.beginPath();
+          ctx.moveTo(x, deckY);
+          ctx.lineTo(x + 42 * state.scale, state.h);
+          ctx.stroke();
+        }
+        ctx.fillStyle = COLORS.pink + "66";
+        for (let i = 0; i < 10; i += 1) {
+          const x = (i * 170 * state.scale - state.scroll * .22) % (state.w + 170 * state.scale);
+          ctx.fillRect(x < -40 ? x + state.w + 170 * state.scale : x, deckY + 10 * state.scale, 36 * state.scale, 4 * state.scale);
+        }
+        ctx.restore();
+      }
+
+      function drawObstacles(now) {
+        for (const obstacle of state.obstacles) {
+          const topH = obstacle.gapY - obstacle.gap / 2;
+          const bottomY = obstacle.gapY + obstacle.gap / 2;
+          drawObstaclePart(obstacle, obstacle.x, 0, obstacle.w, topH, true, now);
+          drawObstaclePart(obstacle, obstacle.x, bottomY, obstacle.w, state.h - bottomY, false, now);
+        }
+      }
+
+      function drawObstaclePart(obstacle, x, y, w, h, top, now) {
+        if (h <= 0) return;
+        ctx.save();
+        ctx.shadowColor = obstacle.color;
+        ctx.shadowBlur = 12;
+        drawObstacleGlass(x, y, w, h, obstacle.color, top);
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(x - w * .58, y, w * 2.16, h);
+        ctx.clip();
+        ctx.globalAlpha = .94;
+        if (obstacle.kind === "speaker") drawModuleStack("obstacle_speaker", x, y, w, h, top, 1.05);
+        else if (obstacle.kind === "led") drawModuleStack("obstacle_led", x, y, w, h, top, .72);
+        else if (obstacle.kind === "light") drawModuleStack("obstacle_light", x, y, w, h, top, .48);
+        else if (obstacle.kind === "case") drawModuleStack("obstacle_cases", x, y, w, h, top, .95);
+        else drawTrussGate(x, y, w, h, obstacle.color, top);
+        ctx.restore();
+        drawObstacleCap(x, top ? y + h : y, w, obstacle.color);
+        ctx.restore();
+      }
+
+      function drawObstacleGlass(x, y, w, h, color, top) {
+        ctx.save();
+        const g = ctx.createLinearGradient(x, y, x + w, y);
+        g.addColorStop(0, "rgba(2,4,13,.58)");
+        g.addColorStop(.5, "rgba(2,4,13,.82)");
+        g.addColorStop(1, "rgba(2,4,13,.58)");
+        ctx.fillStyle = g;
+        roundRect(ctx, x - 7 * state.scale, y, w + 14 * state.scale, h, 6 * state.scale);
+        ctx.fill();
+        ctx.globalCompositeOperation = "lighter";
+        ctx.strokeStyle = color + "bb";
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 14;
+        ctx.lineWidth = 3 * state.scale;
+        ctx.beginPath();
+        ctx.moveTo(x - 6 * state.scale, y);
+        ctx.lineTo(x - 6 * state.scale, y + h);
+        ctx.moveTo(x + w + 6 * state.scale, y);
+        ctx.lineTo(x + w + 6 * state.scale, y + h);
+        ctx.stroke();
+        ctx.globalCompositeOperation = "source-over";
+        ctx.fillStyle = "rgba(255,255,255,.08)";
+        const band = 20 * state.scale;
+        if (top) ctx.fillRect(x - 4 * state.scale, y + h - band, w + 8 * state.scale, band);
+        else ctx.fillRect(x - 4 * state.scale, y, w + 8 * state.scale, band);
+        ctx.restore();
+      }
+
+      function drawObstacleCap(x, y, w, color) {
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        ctx.strokeStyle = color;
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 18;
+        ctx.lineWidth = 6 * state.scale;
+        ctx.beginPath();
+        ctx.moveTo(x - 22 * state.scale, y);
+        ctx.lineTo(x + w + 22 * state.scale, y);
+        ctx.stroke();
+        ctx.fillStyle = COLORS.gold;
+        ctx.beginPath();
+        ctx.arc(x + w / 2, y, 6 * state.scale, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      function drawModuleStack(spriteName, x, y, w, h, top, visualScale) {
+        if (!spriteReady(spriteName)) {
+          if (spriteName === "obstacle_speaker") drawSpeakerTower(x, y, w, h, COLORS.cyan, performance.now());
+          else if (spriteName === "obstacle_led") drawLedWall(x, y, w, h, COLORS.pink, performance.now());
+          else if (spriteName === "obstacle_light") drawLightColumn(x, y, w, h, COLORS.green, performance.now());
+          else drawFlightCases(x, y, w, h, COLORS.gold);
+          return;
+        }
+        const img = sprites[spriteName];
+        const moduleW = Math.max(w * 1.28, 66 * state.scale) * visualScale;
+        const moduleH = moduleW * img.naturalHeight / img.naturalWidth;
+        const cx = x + w / 2;
+        const overlap = moduleH * .12;
+        if (top) {
+          for (let cy = y + h - moduleH / 2; cy > y - moduleH; cy -= moduleH - overlap) {
+            drawSpriteCentered(spriteName, cx, cy, moduleW, moduleH);
+          }
+        } else {
+          for (let cy = y + moduleH / 2; cy < y + h + moduleH; cy += moduleH - overlap) {
+            drawSpriteCentered(spriteName, cx, cy, moduleW, moduleH);
+          }
+        }
+      }
+
+      function drawTrussGate(x, y, w, h, color, top) {
+        const railW = Math.max(20 * state.scale, w * .28);
+        drawTruss(x + w * .08, y, railW, h, color);
+        drawTruss(x + w - railW - w * .08, y, railW, h, color);
+        ctx.save();
+        ctx.strokeStyle = color + "88";
+        ctx.lineWidth = 3 * state.scale;
+        const edgeY = top ? y + h - 28 * state.scale : y + 28 * state.scale;
+        ctx.beginPath();
+        ctx.moveTo(x - 8 * state.scale, edgeY);
+        ctx.lineTo(x + w + 8 * state.scale, edgeY);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      function drawSpeakerTower(x, y, w, h, color, now) {
+        ctx.fillStyle = "#090a14";
+        roundRect(ctx, x, y, w, h, 8 * state.scale);
+        ctx.fill();
+        const count = Math.max(1, Math.floor(h / (78 * state.scale)));
+        for (let i = 0; i < count; i += 1) {
+          const cy = y + h * ((i + .5) / count);
+          ctx.fillStyle = "#15172b";
+          ctx.beginPath();
+          ctx.arc(x + w / 2, cy, Math.min(w, 58 * state.scale) * .36, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.arc(x + w / 2, cy, Math.min(w, 58 * state.scale) * (.2 + Math.sin(now * .008 + i) * .025), 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      }
+
+      function drawTruss(x, y, w, h, color) {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 4 * state.scale;
+        ctx.strokeRect(x + 7 * state.scale, y, w - 14 * state.scale, h);
+        ctx.lineWidth = 2 * state.scale;
+        const step = 34 * state.scale;
+        for (let yy = y; yy < y + h; yy += step) {
+          ctx.beginPath();
+          ctx.moveTo(x + 8 * state.scale, yy);
+          ctx.lineTo(x + w - 8 * state.scale, yy + step);
+          ctx.moveTo(x + w - 8 * state.scale, yy);
+          ctx.lineTo(x + 8 * state.scale, yy + step);
+          ctx.stroke();
+        }
+      }
+
+      function drawLedWall(x, y, w, h, color, now) {
+        ctx.fillStyle = "#050612";
+        roundRect(ctx, x, y, w, h, 8 * state.scale);
+        ctx.fill();
+        const rows = Math.max(2, Math.floor(h / (26 * state.scale)));
+        for (let r = 0; r < rows; r += 1) {
+          ctx.fillStyle = [color, COLORS.cyan, COLORS.pink, COLORS.gold][r % 4] + "aa";
+          const ww = (Math.sin(now * .005 + r) * .5 + .5) * (w - 16 * state.scale);
+          ctx.fillRect(x + 8 * state.scale, y + 10 * state.scale + r * 22 * state.scale, ww, 5 * state.scale);
+        }
+      }
+
+      function drawSuspendedScreen(x, y, w, h, color, top, now) {
+        const screenH = Math.min(h, 94 * state.scale);
+        const yy = top ? y + h - screenH : y;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 3 * state.scale;
+        ctx.beginPath();
+        ctx.moveTo(x + w * .25, yy);
+        ctx.lineTo(x + w * .25, top ? yy - 44 * state.scale : yy + screenH + 44 * state.scale);
+        ctx.moveTo(x + w * .75, yy);
+        ctx.lineTo(x + w * .75, top ? yy - 44 * state.scale : yy + screenH + 44 * state.scale);
+        ctx.stroke();
+        ctx.fillStyle = "#050612";
+        roundRect(ctx, x - 12 * state.scale, yy, w + 24 * state.scale, screenH, 8 * state.scale);
+        ctx.fill();
+        ctx.fillStyle = color + "aa";
+        ctx.fillRect(x, yy + screenH * .28, w, 7 * state.scale);
+        ctx.fillStyle = COLORS.gold + "aa";
+        ctx.fillRect(x + 8 * state.scale, yy + screenH * .56, (w - 16 * state.scale) * (.4 + Math.sin(now * .006) * .25), 7 * state.scale);
+      }
+
+      function drawLightColumn(x, y, w, h, color, now) {
+        ctx.fillStyle = "rgba(4,5,14,.86)";
+        roundRect(ctx, x + w * .18, y, w * .64, h, 999);
+        ctx.fill();
+        const step = 44 * state.scale;
+        for (let yy = y + 18 * state.scale; yy < y + h; yy += step) {
+          const pulse = .55 + Math.sin(now * .007 + yy) * .22;
+          ctx.fillStyle = color + Math.floor(pulse * 255).toString(16).padStart(2, "0");
+          ctx.beginPath();
+          ctx.arc(x + w / 2, yy, w * .24, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      function drawFlightCases(x, y, w, h, color) {
+        const boxH = 56 * state.scale;
+        for (let yy = y; yy < y + h; yy += boxH + 4 * state.scale) {
+          ctx.fillStyle = "#222435";
+          roundRect(ctx, x, yy, w, Math.min(boxH, y + h - yy), 5 * state.scale);
+          ctx.fill();
+          ctx.strokeStyle = "#bbc2d5";
+          ctx.lineWidth = 2 * state.scale;
+          ctx.strokeRect(x + 6 * state.scale, yy + 7 * state.scale, w - 12 * state.scale, Math.min(boxH, y + h - yy) - 14 * state.scale);
+          ctx.fillStyle = color;
+          ctx.fillRect(x + w * .46, yy + 4 * state.scale, w * .08, Math.min(boxH, y + h - yy) - 8 * state.scale);
+        }
+      }
+
+      function drawPickups(now) {
+        for (const item of state.pickups) {
+          const info = PICKUPS[item.type];
+          ctx.save();
+          ctx.translate(item.x, item.y + Math.sin(now * .005 + item.phase) * 5 * state.scale);
+          ctx.shadowColor = info.color;
+          ctx.shadowBlur = item.type === "vip" || item.type === "flow" ? 24 : 14;
+          const spriteName = item.type === "mic" ? "item_mic" : item.type === "vinyl" ? "item_vinyl" : item.type === "casque" ? "item_casque" : item.type === "vip" ? "item_vip" : "item_flow";
+          if (!drawSpriteCentered(spriteName, 0, 0, 54 * state.scale, 54 * state.scale)) {
+            if (item.type === "mic") drawMic(0, 0, 32 * state.scale, info.color);
+            else if (item.type === "vinyl") drawVinyl(0, 0, 34 * state.scale);
+            else if (item.type === "casque") drawHeadphones(0, 0, 34 * state.scale, info.color);
+            else if (item.type === "vip") drawStar(0, 0, 34 * state.scale, info.color);
+            else drawFlow(0, 0, 34 * state.scale, now);
+          }
+          ctx.restore();
+        }
+      }
+
+      function spriteReady(name) {
+        const img = sprites[name];
+        return !!(img && img.complete && img.naturalWidth > 0);
+      }
+
+      function drawSpriteCentered(name, x, y, maxW, maxH, options = {}) {
+        if (!spriteReady(name)) return false;
+        const img = sprites[name];
+        const scale = Math.min(maxW / img.naturalWidth, maxH / img.naturalHeight);
+        const w = img.naturalWidth * scale;
+        const h = img.naturalHeight * scale;
+        ctx.save();
+        ctx.translate(x, y);
+        if (options.rotate) ctx.rotate(options.rotate);
+        if (options.alpha !== undefined) ctx.globalAlpha = options.alpha;
+        ctx.drawImage(img, -w / 2, -h / 2, w, h);
+        ctx.restore();
+        return true;
+      }
+
+      function drawSpriteRect(name, x, y, w, h, options = {}) {
+        if (!spriteReady(name)) return false;
+        const img = sprites[name];
+        ctx.save();
+        if (options.alpha !== undefined) ctx.globalAlpha = options.alpha;
+        if (options.preserveRatio) {
+          const scale = Math.max(w / img.naturalWidth, h / img.naturalHeight);
+          const dw = img.naturalWidth * scale;
+          const dh = img.naturalHeight * scale;
+          ctx.beginPath();
+          ctx.rect(x, y, w, h);
+          ctx.clip();
+          ctx.drawImage(img, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh);
+        } else {
+          ctx.drawImage(img, x, y, w, h);
+        }
+        ctx.restore();
+        return true;
+      }
+
+      function playerSpriteFrame(animName, player, now) {
+        const sequence = PLAYER_ANIMS[animName] || PLAYER_ANIMS.idle;
+        const frameMs = PLAYER_ANIM_MS[animName] || 100;
+        const elapsed = Math.max(0, now - (player.animStart || now));
+        let index = Math.floor(elapsed / frameMs);
+        if (animName === "hit") index = Math.min(sequence.length - 1, index);
+        else index %= sequence.length;
+        return sequence[index];
+      }
+
+      function playerSpriteBounds(animName, scale) {
+        if (animName === "hit") return { w: 150 * scale, h: 132 * scale };
+        if (animName === "fall") return { w: 132 * scale, h: 132 * scale };
+        return { w: 126 * scale, h: 126 * scale };
+      }
+
+      function drawPlayer(now) {
+        const p = state.player;
+        if (!p) return;
+        const vip = state.invincible || isActive("vip", now);
+        const flow = isActive("flow", now);
+        const drawX = Math.round(p.x * state.dpr) / state.dpr;
+        const drawY = Math.round((p.visualY || p.y) * state.dpr) / state.dpr;
+        ctx.save();
+        ctx.translate(drawX, drawY);
+        if (vip || flow) {
+          ctx.shadowColor = vip ? COLORS.gold : COLORS.violet;
+          ctx.shadowBlur = 26;
+          ctx.strokeStyle = vip ? COLORS.gold : COLORS.violet;
+          ctx.lineWidth = 3 * state.scale;
+          ctx.beginPath();
+          ctx.arc(0, -6 * state.scale, 48 * state.scale + Math.sin(now * .009) * 4 * state.scale, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+
+        const s = state.scale;
+        const animName = state.phase === "over" ? "hit" : p.animState || "idle";
+        const spriteName = playerSpriteFrame(animName, p, now);
+        const spriteBounds = playerSpriteBounds(animName, s);
+        ctx.fillStyle = "rgba(0,0,0,.34)";
+        ctx.beginPath();
+        ctx.ellipse(0, 42 * s, 34 * s, 9 * s, 0, 0, Math.PI * 2);
+        ctx.fill();
+        if (drawSpriteCentered(spriteName, 0, 0, spriteBounds.w, spriteBounds.h) || drawSpriteCentered("player_fly", 0, 0, 118 * s, 118 * s)) {
+          ctx.restore();
+          return;
+        }
+
+        const armWave = Math.sin(p.arm) * 7 * s;
+
+        ctx.fillStyle = "rgba(0,0,0,.34)";
+        ctx.beginPath();
+        ctx.ellipse(0, 38 * s, 33 * s, 9 * s, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = COLORS.ink;
+        roundRect(ctx, -18 * s, 20 * s, 13 * s, 31 * s, 7 * s);
+        ctx.fill();
+        roundRect(ctx, 8 * s, 20 * s, 13 * s, 31 * s, 7 * s);
+        ctx.fill();
+        ctx.fillStyle = COLORS.white;
+        roundRect(ctx, -25 * s, 48 * s, 24 * s, 10 * s, 5 * s);
+        ctx.fill();
+        ctx.fillStyle = COLORS.cyan;
+        roundRect(ctx, 4 * s, 48 * s, 25 * s, 10 * s, 5 * s);
+        ctx.fill();
+
+        ctx.fillStyle = COLORS.violet;
+        roundRect(ctx, -27 * s, -17 * s, 54 * s, 47 * s, 15 * s);
+        ctx.fill();
+        ctx.fillStyle = COLORS.pink;
+        roundRect(ctx, -18 * s, -6 * s, 36 * s, 10 * s, 5 * s);
+        ctx.fill();
+        ctx.strokeStyle = COLORS.gold;
+        ctx.lineWidth = 3 * s;
+        ctx.beginPath();
+        ctx.arc(0, 2 * s, 16 * s, .2, Math.PI - .2);
+        ctx.stroke();
+
+        ctx.strokeStyle = "#f2b57d";
+        ctx.lineWidth = 8 * s;
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        ctx.moveTo(-24 * s, -4 * s);
+        ctx.lineTo(-42 * s, 12 * s + armWave);
+        ctx.moveTo(25 * s, -3 * s);
+        ctx.lineTo(48 * s, -12 * s - armWave);
+        ctx.stroke();
+        drawMic(51 * s, -15 * s - armWave, 21 * s, COLORS.gold);
+
+        ctx.fillStyle = "#f2b57d";
+        ctx.beginPath();
+        ctx.arc(0, -39 * s, 18 * s, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = COLORS.ink;
+        roundRect(ctx, -22 * s, -58 * s, 44 * s, 15 * s, 8 * s);
+        ctx.fill();
+        ctx.fillStyle = COLORS.gold;
+        roundRect(ctx, 4 * s, -64 * s, 30 * s, 9 * s, 5 * s);
+        ctx.fill();
+        ctx.fillStyle = COLORS.ink;
+        ctx.fillRect(-8 * s, -42 * s, 4 * s, 4 * s);
+        ctx.fillRect(8 * s, -42 * s, 4 * s, 4 * s);
+        ctx.strokeStyle = COLORS.ink;
+        ctx.lineWidth = 2 * s;
+        ctx.beginPath();
+        ctx.arc(2 * s, -33 * s, 7 * s, .15, Math.PI - .15);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      function drawAttractMode(now) {
+        const baseX = state.w * .23 + Math.sin(now * .0012) * 20 * state.scale;
+        const baseY = state.h * .48 + Math.sin(now * .002) * 32 * state.scale;
+        const ghost = { x: baseX, y: baseY, visualY: baseY, vy: Math.sin(now * .002) * 200, rot: Math.sin(now * .002) * .08, radius: 25 * state.scale, jumpSquash: 0, arm: now * .006 };
+        state.player = ghost;
+        drawPlayer(now);
+        state.player = null;
+        drawMic(state.w * .55, state.h * .5, 36 * state.scale, COLORS.gold);
+      }
+
+      function drawMic(x, y, size, color) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(-Math.PI / 7);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = size * .12;
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        ctx.moveTo(-size * .28, size * .32);
+        ctx.lineTo(size * .1, -size * .05);
+        ctx.stroke();
+        ctx.fillStyle = COLORS.white;
+        roundRect(ctx, -size * .06, -size * .38, size * .34, size * .46, size * .15);
+        ctx.fill();
+        ctx.strokeStyle = "#151524";
+        ctx.lineWidth = size * .035;
+        for (let i = 0; i < 4; i += 1) {
+          ctx.beginPath();
+          ctx.moveTo(-size * .01 + i * size * .075, -size * .31);
+          ctx.lineTo(-size * .01 + i * size * .075, size * .02);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      function drawVinyl(x, y, size) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.fillStyle = "#05050b";
+        ctx.beginPath();
+        ctx.arc(0, 0, size * .42, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "rgba(255,255,255,.18)";
+        ctx.lineWidth = 2;
+        for (let r = .18; r <= .36; r += .09) {
+          ctx.beginPath();
+          ctx.arc(0, 0, size * r, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        ctx.fillStyle = COLORS.pink;
+        ctx.beginPath();
+        ctx.arc(0, 0, size * .15, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = COLORS.gold;
+        ctx.beginPath();
+        ctx.arc(0, 0, size * .045, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      function drawHeadphones(x, y, size, color) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = size * .1;
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        ctx.arc(0, size * .05, size * .32, Math.PI * 1.08, Math.PI * 1.92);
+        ctx.stroke();
+        ctx.fillStyle = COLORS.white;
+        roundRect(ctx, -size * .43, -size * .02, size * .2, size * .34, size * .08);
+        ctx.fill();
+        roundRect(ctx, size * .23, -size * .02, size * .2, size * .34, size * .08);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      function drawStar(x, y, size, color) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        for (let i = 0; i < 10; i += 1) {
+          const r = i % 2 ? size * .2 : size * .45;
+          const a = -Math.PI / 2 + i * Math.PI / 5;
+          ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = COLORS.ink;
+        ctx.font = `900 ${size * .32}px Arial`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("VIP", 0, 1);
+        ctx.restore();
+      }
+
+      function drawFlow(x, y, size, now) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(Math.sin(now * .005) * .16);
+        ctx.strokeStyle = COLORS.violet;
+        ctx.lineWidth = size * .08;
+        ctx.shadowColor = COLORS.violet;
+        ctx.shadowBlur = 24;
+        ctx.beginPath();
+        ctx.moveTo(-size * .34, -size * .02);
+        ctx.quadraticCurveTo(-size * .08, -size * .36, size * .1, -size * .07);
+        ctx.quadraticCurveTo(size * .32, size * .22, size * .43, -size * .08);
+        ctx.stroke();
+        ctx.fillStyle = COLORS.gold;
+        ctx.beginPath();
+        ctx.moveTo(-size * .08, -size * .04);
+        ctx.lineTo(size * .1, -size * .04);
+        ctx.lineTo(-size * .03, size * .38);
+        ctx.lineTo(size * .25, size * .02);
+        ctx.lineTo(size * .08, size * .02);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+
+      function drawParticles() {
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        for (const p of state.particles) {
+          const t = p.age / p.life;
+          ctx.globalAlpha = 1 - t;
+          ctx.fillStyle = p.color;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size * (1 - t * .45), 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+
+      function drawConfetti() {
+        ctx.save();
+        for (const c of state.confetti) {
+          ctx.save();
+          ctx.translate(c.x, c.y);
+          ctx.rotate(c.rot);
+          ctx.globalAlpha = 1 - c.age / c.life;
+          ctx.fillStyle = c.color;
+          ctx.fillRect(-c.w / 2, -c.h / 2, c.w, c.h);
+          ctx.restore();
+        }
+        ctx.restore();
+      }
+
+      function drawFloaters() {
+        ctx.save();
+        ctx.textAlign = "center";
+        ctx.font = `900 ${Math.max(14, 18 * state.scale)}px Arial, sans-serif`;
+        for (const f of state.floaters) {
+          const t = f.age / f.life;
+          ctx.globalAlpha = 1 - t;
+          ctx.fillStyle = f.color;
+          ctx.shadowColor = f.color;
+          ctx.shadowBlur = 12;
+          ctx.fillText(f.text, f.x, f.y - t * 28 * state.scale);
+        }
+        ctx.restore();
+      }
+
+      function burst(x, y, color, count, power) {
+        for (let i = 0; i < count; i += 1) {
+          const a = Math.random() * Math.PI * 2;
+          const speed = random(.07, .25) * power;
+          state.particles.push({
+            x,
+            y,
+            vx: Math.cos(a) * speed,
+            vy: Math.sin(a) * speed,
+            size: random(2, 5.5) * state.scale,
+            age: 0,
+            life: random(360, 820),
+            color: i % 4 === 0 ? COLORS.white : color
+          });
+        }
+      }
+
+      function launchConfetti() {
+        for (let i = 0; i < 150; i += 1) {
+          state.confetti.push({
+            x: random(0, state.w),
+            y: random(-state.h * .3, 20),
+            vx: random(-.08, .08),
+            vy: random(.08, .24),
+            w: random(5, 11) * state.scale,
+            h: random(7, 16) * state.scale,
+            rot: random(0, Math.PI * 2),
+            spin: random(-.01, .01),
+            age: 0,
+            life: random(3500, 5800),
+            color: [COLORS.cyan, COLORS.pink, COLORS.gold, COLORS.green, COLORS.violet][i % 5]
+          });
+        }
+      }
+
+      function floater(x, y, text, color) {
+        state.floaters.push({ x, y, text, color, age: 0, life: 900 });
+        if (state.floaters.length > 24) state.floaters.shift();
+      }
+
+      function flashToast(text) {
+        toast.textContent = text;
+        toast.classList.add("is-visible");
+        window.clearTimeout(flashToast.timer);
+        flashToast.timer = window.setTimeout(() => toast.classList.remove("is-visible"), 1000);
+      }
+
+      function showScreen(id) {
+        document.querySelectorAll(".screen").forEach(screen => screen.classList.remove("is-active"));
+        if (id) document.getElementById(id).classList.add("is-active");
+        hud.classList.toggle("is-hidden", !isGameplayPhase());
+      }
+
+      function loadScores() {
+        try {
+          const rows = JSON.parse(localStorage.getItem(SCORE_KEY) || "[]");
+          return Array.isArray(rows) ? rows.filter(row => row && Number.isFinite(row.score)).slice(0, 10) : [];
+        } catch (_) {
+          return [];
+        }
+      }
+
+      function saveScores(rows) {
+        localStorage.setItem(SCORE_KEY, JSON.stringify(rows.slice(0, 10)));
+      }
+
+      function bestScore() {
+        const rows = loadScores();
+        return rows.length ? rows[0].score : 0;
+      }
+
+      function qualifies(score) {
+        const rows = loadScores();
+        return score > 0 && (rows.length < 10 || score > (rows[rows.length - 1]?.score || 0));
+      }
+
+      function cleanContactField(value, maxLength) {
+        return String(value || "").trim().replace(/\s+/g, " ").slice(0, maxLength);
+      }
+
+      function isValidEmail(value) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i.test(String(value || "").trim());
+      }
+
+      function setScoreSaveStatus(message, type = "") {
+        scoreSaveStatus.textContent = message;
+        scoreSaveStatus.className = `formHint${type ? ` is-${type}` : ""}`;
+      }
+
+      function submissionId() {
+        return `rrf-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+      }
+
+      function addRecord(player, result) {
+        const firstName = cleanContactField(player?.firstName, 28);
+        const displayName = firstName || "MC";
+        const rows = loadScores();
+        rows.push({
+          name: displayName,
+          firstName,
+          email: cleanContactField(player?.email, 80).toLowerCase(),
+          score: result.score,
+          distance: result.distance,
+          mics: result.mics,
+          time: result.time,
+          date: new Date().toISOString()
+        });
+        rows.sort((a, b) => b.score - a.score || b.distance - a.distance);
+        saveScores(rows);
+      }
+
+      function buildWixScoreMessage(player, result) {
+        const id = submissionId();
+        state.lastSubmissionId = id;
+        return {
+          type: WIX_SCORE_MESSAGE,
+          version: 1,
+          submissionId: id,
+          payload: {
+            firstName: player.firstName,
+            email: player.email,
+            score: result.score
+          }
+        };
+      }
+
+      function sendScoreToWix(player, result) {
+        const message = buildWixScoreMessage(player, result);
+        try {
+          if (window.parent && window.parent !== window) {
+            window.parent.postMessage(message, "*");
+            return true;
+          }
+        } catch (_) {
+          return false;
+        }
+        return false;
+      }
+
+      function renderScores(target = scoreTable) {
+        const rows = loadScores();
+        target.innerHTML = "";
+        if (!rows.length) {
+          const empty = document.createElement("div");
+          empty.className = "scoreRow";
+          empty.innerHTML = "<span>#</span><span>Aucun record</span><span>0</span>";
+          target.appendChild(empty);
+          return;
+        }
+        rows.forEach((row, index) => {
+          const line = document.createElement("div");
+          line.className = "scoreRow";
+          line.innerHTML = `<span>#${index + 1}</span><span>${escapeHtml(row.name)}</span><span>${Math.round(row.score)}</span>`;
+          target.appendChild(line);
+        });
+      }
+
+      function escapeHtml(value) {
+        return String(value || "MC").replace(/[&<>"']/g, char => ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#39;"
+        })[char]);
+      }
+
+      function roundRect(context, x, y, w, h, r) {
+        const radius = Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2);
+        context.beginPath();
+        context.moveTo(x + radius, y);
+        context.lineTo(x + w - radius, y);
+        context.quadraticCurveTo(x + w, y, x + w, y + radius);
+        context.lineTo(x + w, y + h - radius);
+        context.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+        context.lineTo(x + radius, y + h);
+        context.quadraticCurveTo(x, y + h, x, y + h - radius);
+        context.lineTo(x, y + radius);
+        context.quadraticCurveTo(x, y, x + radius, y);
+        context.closePath();
+      }
+
+      function rects(a, b) {
+        return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+      }
+
+      function circleRect(cx, cy, r, rect) {
+        const nx = clamp(cx, rect.x, rect.x + rect.w);
+        const ny = clamp(cy, rect.y, rect.y + rect.h);
+        return Math.hypot(cx - nx, cy - ny) <= r;
+      }
+
+      function clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+      }
+
+      function positiveModulo(value, divisor) {
+        return ((value % divisor) + divisor) % divisor;
+      }
+
+      function lerp(a, b, t) {
+        return a + (b - a) * t;
+      }
+
+      function random(min, max) {
+        return min + Math.random() * (max - min);
+      }
+
+      function smoothstep(value) {
+        const t = clamp(value, 0, 1);
+        return t * t * (3 - 2 * t);
+      }
+
+      function hexToRgb(color) {
+        if (typeof color === "object" && color) return color;
+        let value = String(color || "#ffffff").replace("#", "");
+        if (value.length === 3) value = value.split("").map(char => char + char).join("");
+        const int = Number.parseInt(value, 16);
+        return {
+          r: (int >> 16) & 255,
+          g: (int >> 8) & 255,
+          b: int & 255
+        };
+      }
+
+      function mixRgb(a, b, t) {
+        const ca = hexToRgb(a);
+        const cb = hexToRgb(b);
+        return {
+          r: Math.round(lerp(ca.r, cb.r, t)),
+          g: Math.round(lerp(ca.g, cb.g, t)),
+          b: Math.round(lerp(ca.b, cb.b, t))
+        };
+      }
+
+      function rgbCss(color, alpha = 1) {
+        const c = hexToRgb(color);
+        const a = clamp(alpha, 0, 1);
+        return a >= .999 ? `rgb(${c.r},${c.g},${c.b})` : `rgba(${c.r},${c.g},${c.b},${a.toFixed(3)})`;
+      }
+
+      function pseudo(seed) {
+        const value = Math.sin(seed * 12.9898 + 78.233) * 43758.5453;
+        return value - Math.floor(value);
+      }
+
+      function handleSecretInvincibleKey(event) {
+        const target = event.target;
+        if (target && target.closest && target.closest("input,textarea")) return false;
+
+        const now = performance.now();
+        const key = event.key.toLowerCase();
+        if (now - state.lastSecretKeyAt > 2400) state.secretInputIndex = 0;
+        state.lastSecretKeyAt = now;
+
+        const expected = SECRET_INVINCIBLE_SEQUENCE[state.secretInputIndex];
+        if (key === expected) {
+          state.secretInputIndex += 1;
+          if (state.secretInputIndex >= SECRET_INVINCIBLE_SEQUENCE.length) {
+            state.secretInputIndex = 0;
+            state.secretInvincible = !state.secretInvincible;
+            if (isGameplayPhase()) state.invincible = state.secretInvincible;
+            flashToast(state.secretInvincible ? "VIP prive ON" : "VIP prive OFF");
+            audio.ensure();
+            audio.airHorn();
+          }
+          return true;
+        }
+
+        state.secretInputIndex = key === SECRET_INVINCIBLE_SEQUENCE[0] ? 1 : 0;
+        return false;
+      }
+
+      function mainLoop(now) {
+        if (!mainLoop.last) mainLoop.last = now;
+        const dt = Math.min(50, now - mainLoop.last);
+        mainLoop.last = now;
+        const frameNow = state.phase === "paused" && state.pauseStarted ? state.pauseStarted : now;
+        update(dt, frameNow);
+        draw(frameNow);
+        requestAnimationFrame(mainLoop);
+      }
+
+      document.getElementById("playBtn").addEventListener("click", startGame);
+      document.getElementById("scoresPlayBtn").addEventListener("click", startGame);
+      document.getElementById("restartBtn").addEventListener("click", startGame);
+      document.getElementById("scoresBtn").addEventListener("click", () => {
+        renderScores(scoreTable);
+        showScreen("scoresScreen");
+      });
+      document.querySelectorAll("[data-home]").forEach(button => {
+        button.addEventListener("click", () => {
+          state.phase = "home";
+          showScreen("homeScreen");
+        });
+      });
+
+      nameForm.addEventListener("submit", event => {
+        event.preventDefault();
+        if (!state.lastResult || state.scoreSubmitting) return;
+        const player = {
+          firstName: cleanContactField(playerFirstName.value, 28),
+          email: cleanContactField(playerEmail.value, 80).toLowerCase()
+        };
+        if (!player.firstName || !isValidEmail(player.email)) {
+          setScoreSaveStatus("Prenom et email valide obligatoires.", "error");
+          return;
+        }
+        state.scoreSubmitting = true;
+        scoreSubmitBtn.disabled = true;
+        addRecord(player, state.lastResult);
+        const sentToWix = sendScoreToWix(player, state.lastResult);
+        state.pendingRecord = false;
+        nameForm.classList.remove("is-active");
+        renderScores(overScoreTable);
+        flashToast(sentToWix ? "Score envoye a Wix" : "Score sauvegarde localement");
+        setScoreSaveStatus(sentToWix ? "Score envoye a Wix." : "Score sauvegarde localement. Integration Wix non detectee.", sentToWix ? "ok" : "error");
+      });
+
+      window.addEventListener("message", event => {
+        const data = event.data || {};
+        if (data.type !== WIX_SCORE_ACK_MESSAGE) return;
+        if (data.submissionId && data.submissionId !== state.lastSubmissionId) return;
+        if (data.ok) {
+          flashToast("Score ajoute a la base Wix");
+        } else {
+          flashToast("Base Wix indisponible");
+          console.warn("Wix score save failed", data.error || data);
+        }
+      });
+
+      soundBtn.addEventListener("click", () => {
+        audio.ensure();
+        audio.setMuted(!audio.muted);
+      });
+
+      volumeRange.addEventListener("input", () => {
+        audio.ensure();
+        audio.setVolume(Number(volumeRange.value));
+      });
+
+      window.addEventListener("keydown", event => {
+        if (handleSecretInvincibleKey(event)) {
+          event.preventDefault();
+          return;
+        }
+        const target = event.target;
+        if (target && target.closest && target.closest("input,textarea")) return;
+        const key = event.key.toLowerCase();
+        if (event.code === "Space" || key === " " || key === "spacebar") {
+          event.preventDefault();
+          if (state.phase === "playing" || state.phase === "paused") togglePause();
+          else if (state.phase === "home" || state.phase === "over") startGame();
+        }
+      }, { passive: false });
+
+      window.addEventListener("pointerdown", event => {
+        const target = event.target;
+        if (target.closest && target.closest("button,input,.screen")) return;
+        event.preventDefault();
+        if (state.phase === "playing") jump();
+      }, { passive: false });
+
+      document.addEventListener("visibilitychange", () => {
+        if (document.hidden) audio.stopBeat();
+        else if (!audio.muted && state.phase === "playing") audio.startBeat();
+      });
+
+      window.addEventListener("resize", resize, { passive: true });
+      state.best = bestScore();
+      volumeRange.value = String(audio.volume);
+      resize();
+      renderScores(scoreTable);
+      updateUI(performance.now(), 16);
+      requestAnimationFrame(mainLoop);
+    })();
+  </script>
+</body>
+</html>

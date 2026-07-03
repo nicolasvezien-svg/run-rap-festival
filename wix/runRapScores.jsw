@@ -1,0 +1,39 @@
+import wixData from "wix-data";
+
+const COLLECTION_ID = "RunRapScores";
+
+function cleanText(value, maxLength = 120) {
+  return String(value || "").trim().replace(/\s+/g, " ").slice(0, maxLength);
+}
+
+function cleanEmail(value) {
+  return cleanText(value, 120).toLowerCase();
+}
+
+function cleanNumber(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? Math.max(0, Math.round(number)) : 0;
+}
+
+function isValidEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i.test(String(value || "").trim());
+}
+
+export async function saveRunRapScore(payload = {}, submissionId = "") {
+  const firstName = cleanText(payload.firstName, 60);
+  const email = cleanEmail(payload.email);
+  const score = cleanNumber(payload.score);
+
+  if (!firstName || !isValidEmail(email) || score <= 0) {
+    throw new Error("INVALID_RUN_RAP_SCORE_PAYLOAD");
+  }
+
+  const item = {
+    title: `${firstName} - ${score}`,
+    firstName,
+    email,
+    score
+  };
+
+  return wixData.insert(COLLECTION_ID, item, { suppressAuth: true });
+}

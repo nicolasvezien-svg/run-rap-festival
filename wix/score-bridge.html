@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Run Rap Festival Bridge</title>
+  <style>
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: #080712;
+    }
+
+    iframe {
+      display: block;
+      width: 100%;
+      height: 100%;
+      border: 0;
+    }
+  </style>
+</head>
+<body>
+  <!-- Remplace GAME_URL par l'URL publique du dossier du jeu, par exemple https://ton-domaine.com/run-rap-festival/index.html -->
+  <iframe id="runRapGame" src="GAME_URL" allow="autoplay; fullscreen" scrolling="no"></iframe>
+
+  <script>
+    const SCORE_MESSAGE = "RUN_RAP_FESTIVAL_SCORE";
+    const SCORE_ACK_MESSAGE = "RUN_RAP_FESTIVAL_SCORE_ACK";
+    const gameFrame = document.getElementById("runRapGame");
+
+    window.addEventListener("message", (event) => {
+      const data = event.data || {};
+      if (data.type === SCORE_MESSAGE) {
+        window.parent.postMessage(data, "*");
+      }
+      if (data.type === SCORE_ACK_MESSAGE && gameFrame.contentWindow) {
+        gameFrame.contentWindow.postMessage(data, "*");
+      }
+    });
+  </script>
+</body>
+</html>
